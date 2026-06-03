@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "4e76ae87-d734-482b-b925-2dcda8e1af70",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 1400,
+  "height": 14,
+  "platformSettings": {},
+  "subMetas": {
+    "Utopium-EX": {
+      "ver": "1.0.6",
+      "uuid": "b40a30d9-cb55-4664-a6f4-7b594b2fa9e8",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "4e76ae87-d734-482b-b925-2dcda8e1af70",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 6.5,
+      "offsetY": -1,
+      "trimX": 16,
+      "trimY": 3,
+      "width": 1381,
+      "height": 10,
+      "rawWidth": 1400,
+      "rawHeight": 14,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

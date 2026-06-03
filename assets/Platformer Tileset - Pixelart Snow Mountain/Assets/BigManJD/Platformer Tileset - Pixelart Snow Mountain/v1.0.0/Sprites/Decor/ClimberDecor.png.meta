@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "e7c2463a-439f-4b61-8880-545fbff07e0d",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 64,
+  "height": 48,
+  "platformSettings": {},
+  "subMetas": {
+    "ClimberDecor": {
+      "ver": "1.0.6",
+      "uuid": "d7030724-b492-4aa3-98d7-16f158f89efd",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "e7c2463a-439f-4b61-8880-545fbff07e0d",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 1,
+      "offsetY": 1.5,
+      "trimX": 6,
+      "trimY": 0,
+      "width": 54,
+      "height": 45,
+      "rawWidth": 64,
+      "rawHeight": 48,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "c759f012-fb76-4e82-b0a7-fac691f222f8",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 512,
+  "height": 256,
+  "platformSettings": {},
+  "subMetas": {
+    "City Night Layer 02": {
+      "ver": "1.0.6",
+      "uuid": "e170fcad-84ae-442b-a9ea-c6ba2ce3b1f0",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "c759f012-fb76-4e82-b0a7-fac691f222f8",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": -48.5,
+      "trimX": 0,
+      "trimY": 97,
+      "width": 512,
+      "height": 159,
+      "rawWidth": 512,
+      "rawHeight": 256,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

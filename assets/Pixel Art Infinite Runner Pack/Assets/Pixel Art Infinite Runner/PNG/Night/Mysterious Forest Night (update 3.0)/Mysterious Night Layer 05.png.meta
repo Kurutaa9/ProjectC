@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "7e2737a8-4f00-4d62-8d77-685fff613f21",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 512,
+  "height": 256,
+  "platformSettings": {},
+  "subMetas": {
+    "Mysterious Night Layer 05": {
+      "ver": "1.0.6",
+      "uuid": "1f1fd582-1a4a-4021-b2bf-8b77e33f441b",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "7e2737a8-4f00-4d62-8d77-685fff613f21",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": -118.5,
+      "trimX": 0,
+      "trimY": 237,
+      "width": 512,
+      "height": 19,
+      "rawWidth": 512,
+      "rawHeight": 256,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

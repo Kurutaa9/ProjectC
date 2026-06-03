@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "db64026e-4740-4dfa-a6ab-5504c344d998",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 512,
+  "height": 256,
+  "platformSettings": {},
+  "subMetas": {
+    "Forest Night Layer 01": {
+      "ver": "1.0.6",
+      "uuid": "75f03c24-b4d4-4438-9811-27d647ea2267",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "db64026e-4740-4dfa-a6ab-5504c344d998",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 0,
+      "trimX": 0,
+      "trimY": 0,
+      "width": 512,
+      "height": 256,
+      "rawWidth": 512,
+      "rawHeight": 256,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

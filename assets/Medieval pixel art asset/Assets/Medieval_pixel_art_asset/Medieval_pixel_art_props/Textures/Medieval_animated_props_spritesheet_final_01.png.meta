@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "7252050d-7351-402c-9cc9-d517b950a2f5",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 512,
+  "height": 512,
+  "platformSettings": {},
+  "subMetas": {
+    "Medieval_animated_props_spritesheet_final_01": {
+      "ver": "1.0.6",
+      "uuid": "92200a2d-07a8-4626-b792-b38da35283ee",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "7252050d-7351-402c-9cc9-d517b950a2f5",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": -120,
+      "offsetY": 135,
+      "trimX": 28,
+      "trimY": 34,
+      "width": 216,
+      "height": 174,
+      "rawWidth": 512,
+      "rawHeight": 512,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

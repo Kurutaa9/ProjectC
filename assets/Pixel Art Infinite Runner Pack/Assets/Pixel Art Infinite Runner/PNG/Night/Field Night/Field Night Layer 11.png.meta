@@ -1,0 +1,38 @@
+{
+  "ver": "2.3.7",
+  "uuid": "473fbdf1-bf7d-4410-9479-e53770161422",
+  "importer": "texture",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "genMipmaps": false,
+  "packable": true,
+  "width": 512,
+  "height": 256,
+  "platformSettings": {},
+  "subMetas": {
+    "Field Night Layer 11": {
+      "ver": "1.0.6",
+      "uuid": "962c2458-b743-4bf7-9f18-a338ff67b31d",
+      "importer": "sprite-frame",
+      "rawTextureUuid": "473fbdf1-bf7d-4410-9479-e53770161422",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": -3,
+      "offsetY": -121.5,
+      "trimX": 5,
+      "trimY": 243,
+      "width": 496,
+      "height": 13,
+      "rawWidth": 512,
+      "rawHeight": 256,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}
