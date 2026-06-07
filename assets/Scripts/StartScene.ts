@@ -6,7 +6,7 @@ declare const firebase: any;
 export default class MenuControl extends cc.Component {
 
     // ==========================================
-    // 1. UI 節點綁定區 (等一下要回 Cocos 編輯器拉過去)
+    // 1. UI 節點綁定區
     // ==========================================
 
     // --- 主畫面 UI ---
@@ -14,21 +14,25 @@ export default class MenuControl extends cc.Component {
     @property(cc.Node) btnLogin: cc.Node = null;      // LOGIN 按鈕
     @property(cc.Node) btnSignup: cc.Node = null;     // SIGN UP 按鈕
 
-    // --- 註冊 Modal UI ---
-    @property(cc.Node) signupModal: cc.Node = null;   // 整個 SignupModal 節點
-
-    // --- 輸入框 (EditBox) ---
+    // --- 註冊 (Signup) UI ---
+    @property(cc.Node) signupModal: cc.Node = null;
     @property(cc.EditBox) emailInput: cc.EditBox = null;
     @property(cc.EditBox) usernameInput: cc.EditBox = null;
     @property(cc.EditBox) passwordInput: cc.EditBox = null;
+
+    // --- 🌟 新增：登入 (Login) UI ---
+    @property(cc.Node) loginModal: cc.Node = null;
+    @property(cc.EditBox) loginEmailInput: cc.EditBox = null;
+    @property(cc.EditBox) loginPasswordInput: cc.EditBox = null;
 
     // ==========================================
     // 2. 遊戲啟動與 Firebase 載入
     // ==========================================
 
     onLoad () {
-        // 遊戲一開始先隱藏註冊框，確保只顯示主選單
+        // 遊戲一開始先隱藏兩個 Modal
         this.closeSignupModal();
+        this.closeLoginModal();
         
         // 載入 Firebase
         this.loadFirebaseCDN(); 
@@ -78,71 +82,108 @@ export default class MenuControl extends cc.Component {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
             console.log("Firebase initialize success");
-            
-            console.log("Auth state:", firebase.auth());
-            console.log("Firestore state:", firebase.firestore());
         }
     }
 
     // ==========================================
-    // 3. UI 顯示切換與註冊功能
+    // 3. 註冊功能 (Signup)
     // ==========================================
 
-    // 打開註冊介面
     openSignupModal () {
         this.titleNode.active = false;
         this.btnLogin.active = false;
         this.btnSignup.active = false;
-        
         this.signupModal.active = true;
 
-        // 清空輸入框內容
         this.emailInput.string = '';
         this.usernameInput.string = '';
         this.passwordInput.string = '';
     }
 
-    // 關閉註冊介面
     closeSignupModal () {
         this.titleNode.active = true;
         this.btnLogin.active = true;
         this.btnSignup.active = true;
-
         this.signupModal.active = false;
     }
 
-    // 點擊 Enter 註冊按鈕
     onSignupEnterClicked () {
         const email = this.emailInput.string;
         const username = this.usernameInput.string;
         const password = this.passwordInput.string;
 
-        // 防呆檢查
         if (!email || !username || !password) {
             console.warn("請填寫所有欄位！");
             return;
         }
 
-        console.log("開始註冊...");
-
-        // 呼叫 Firebase 註冊功能
         firebase.auth().createUserWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                console.log("信箱註冊成功！準備儲存使用者名稱...");
-                // 把 Username 更新進玩家的 Firebase 設定裡
                 return userCredential.user.updateProfile({
                     displayName: username
                 });
             })
             .then(() => {
-                console.log("玩家名稱已儲存：", username);
-                console.log("--- 完整註冊流程成功！ ---");
-                
-                // 註冊成功後關閉視窗
+                console.log("註冊成功！玩家名稱：", username);
                 this.closeSignupModal();
             })
             .catch((error) => {
                 console.error("註冊失敗:", error.message);
+            });
+    }
+
+    // ==========================================
+    // 4. 🌟 新增：登入功能 (Login)
+    // ==========================================
+
+    openLoginModal () {
+        // 隱藏主選單背景
+        this.titleNode.active = false;
+        this.btnLogin.active = false;
+        this.btnSignup.active = false;
+        
+        // 顯示登入框
+        this.loginModal.active = true;
+
+        // 清空輸入框內容
+        this.loginEmailInput.string = '';
+        this.loginPasswordInput.string = '';
+    }
+
+    closeLoginModal () {
+        // 恢復主選單背景
+        this.titleNode.active = true;
+        this.btnLogin.active = true;
+        this.btnSignup.active = true;
+
+        // 隱藏登入框
+        this.loginModal.active = false;
+    }
+
+    onLoginEnterClicked () {
+        const email = this.loginEmailInput.string;
+        const password = this.loginPasswordInput.string;
+
+        // 防呆檢查
+        if (!email || !password) {
+            console.warn("請填寫信箱與密碼！");
+            return;
+        }
+
+        console.log("登入中...");
+
+        // 呼叫 Firebase 登入 API
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                console.log("登入成功！歡迎：", userCredential.user.email);
+                
+                // 🌟 登入成功，跳轉到 opening 場景
+                cc.director.loadScene("Opening");
+            })
+            .catch((error) => {
+                // 登入失敗 (密碼錯誤或無此帳號)
+                console.error("登入失敗:", error.message);
+                // 這裡可以考慮加上一段顯示錯誤訊息給玩家看的 UI (例如 Toast)
             });
     }
 }
