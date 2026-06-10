@@ -1,6 +1,6 @@
 {
   "ver": "2.3.7",
-  "uuid": "869e5773-ee91-4e24-81ce-324e8ed27a05",
+  "uuid": "56f892e3-3890-4b57-99ab-5b5ce538f6cf",
   "importer": "texture",
   "type": "sprite",
   "wrapMode": "clamp",
@@ -8,15 +8,15 @@
   "premultiplyAlpha": false,
   "genMipmaps": false,
   "packable": true,
-  "width": 512,
-  "height": 256,
+  "width": 32,
+  "height": 32,
   "platformSettings": {},
   "subMetas": {
-    "Mysterious Night Layer 03": {
+    "frame": {
       "ver": "1.0.6",
-      "uuid": "48aa8815-773a-4a38-9104-61f0de13991d",
+      "uuid": "bf50f802-95a4-435e-9e45-58f6ce273d30",
       "importer": "sprite-frame",
-      "rawTextureUuid": "869e5773-ee91-4e24-81ce-324e8ed27a05",
+      "rawTextureUuid": "56f892e3-3890-4b57-99ab-5b5ce538f6cf",
       "trimType": "auto",
       "trimThreshold": 1,
       "rotated": false,
@@ -24,14 +24,14 @@
       "offsetY": 0,
       "trimX": 0,
       "trimY": 0,
-      "width": 512,
-      "height": 256,
-      "rawWidth": 512,
-      "rawHeight": 256,
-      "borderTop": 0,
-      "borderBottom": 0,
-      "borderLeft": 0,
-      "borderRight": 0,
+      "width": 32,
+      "height": 32,
+      "rawWidth": 32,
+      "rawHeight": 32,
+      "borderTop": 6,
+      "borderBottom": 6,
+      "borderLeft": 6,
+      "borderRight": 6,
       "subMetas": {}
     }
   }
