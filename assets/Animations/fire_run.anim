@@ -1,0 +1,43 @@
+{
+  "__type__": "cc.AnimationClip",
+  "_name": "fire_run",
+  "_objFlags": 0,
+  "_native": "",
+  "_duration": 3.1,
+  "sample": 10,
+  "speed": 1,
+  "wrapMode": 2,
+  "curveData": {
+    "comps": {
+      "cc.Sprite": {
+        "spriteFrame": [
+          {
+            "frame": 0,
+            "value": {
+              "__uuid__": "4bf82353-20ec-49bb-8190-c2d3c938c4ba"
+            }
+          },
+          {
+            "frame": 1,
+            "value": {
+              "__uuid__": "01cc0aca-97c6-4194-951d-a4bde270d26b"
+            }
+          },
+          {
+            "frame": 2,
+            "value": {
+              "__uuid__": "1391bb27-2e29-4079-b435-7f09555b5123"
+            }
+          },
+          {
+            "frame": 3,
+            "value": {
+              "__uuid__": "88ef1930-013f-4a6b-b149-9c1fbaab1387"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": []
+}

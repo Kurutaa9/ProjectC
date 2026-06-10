@@ -1,0 +1,37 @@
+{
+  "__type__": "cc.AnimationClip",
+  "_name": "fire_jump",
+  "_objFlags": 0,
+  "_native": "",
+  "_duration": 2.1,
+  "sample": 10,
+  "speed": 1,
+  "wrapMode": 1,
+  "curveData": {
+    "comps": {
+      "cc.Sprite": {
+        "spriteFrame": [
+          {
+            "frame": 0,
+            "value": {
+              "__uuid__": "21601e45-ece2-482a-9937-0213b00e9723"
+            }
+          },
+          {
+            "frame": 1,
+            "value": {
+              "__uuid__": "c3013884-51de-4370-94e4-fbe119bd6cbb"
+            }
+          },
+          {
+            "frame": 2,
+            "value": {
+              "__uuid__": "21a1ddde-03ef-4f2c-ac3e-dc030b764e13"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": []
+}

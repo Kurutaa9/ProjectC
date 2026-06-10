@@ -1,0 +1,43 @@
+{
+  "__type__": "cc.AnimationClip",
+  "_name": "water_idle",
+  "_objFlags": 0,
+  "_native": "",
+  "_duration": 3.1,
+  "sample": 10,
+  "speed": 1,
+  "wrapMode": 2,
+  "curveData": {
+    "comps": {
+      "cc.Sprite": {
+        "spriteFrame": [
+          {
+            "frame": 0,
+            "value": {
+              "__uuid__": "3e07fa66-b834-4e52-8fa0-d01b28393ac5"
+            }
+          },
+          {
+            "frame": 1,
+            "value": {
+              "__uuid__": "b11f9216-21d7-4c57-b654-d189c878a182"
+            }
+          },
+          {
+            "frame": 2,
+            "value": {
+              "__uuid__": "3b8ddcbe-f8df-432a-9fbf-008d6fdd5511"
+            }
+          },
+          {
+            "frame": 3,
+            "value": {
+              "__uuid__": "b43dc79a-e156-4907-953a-1637050ae806"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": []
+}
