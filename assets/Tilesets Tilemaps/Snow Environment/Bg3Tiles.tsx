@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tileset name="Background3" tilewidth="16" tileheight="16" tilecount="220" columns="20">
+ <image source="../../Platformer Tileset - Pixelart Snow Mountain/Assets/BigManJD/Platformer Tileset - Pixelart Snow Mountain/v1.0.0/Sprites/Background/Background3.png" width="320" height="180"/>
+</tileset>
