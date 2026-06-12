@@ -8,6 +8,12 @@ export default class PlayerMovement extends cc.Component {
     @property
     useArrowKeys: boolean = false;
 
+    @property(cc.AudioClip)
+    runSound: cc.AudioClip = null;
+
+    @property(cc.AudioClip)
+    jumpSound: cc.AudioClip = null;
+
     @property(cc.Node)
     sprintDustNode: cc.Node | null = null;
 
@@ -37,12 +43,16 @@ export default class PlayerMovement extends cc.Component {
     private dustElapsed: number = 0;
     private dustFrameIndex: number = 0;
 
+    private runAudioId: number = -1;
+    private wasRunning: boolean = false;
+
     onLoad() {
         cc.director.getPhysicsManager().enabled = true;
         cc.director.getPhysicsManager().gravity = cc.v2(0, -900);
 
         this.rb = this.getComponent(cc.RigidBody);
         this.anim = this.getComponent(cc.Animation);
+
         if (this.sprintDustNode) {
             this.sprintDustSprite = this.sprintDustNode.getComponent(cc.Sprite);
             this.sprintDustNode.active = false;
@@ -55,6 +65,8 @@ export default class PlayerMovement extends cc.Component {
     onDestroy() {
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_UP, this.onKeyUp, this);
+
+        this.stopRunSound();
     }
 
     update(dt: number) {
@@ -69,7 +81,7 @@ export default class PlayerMovement extends cc.Component {
         if (this.inQuicksand) {
             xSpeed = this.moveX * (this.speed * 0.45);
             ySpeed = Math.max(v.y, -15);
-        } else if (!this.isGrounded() && this.isTouchingWall() && ySpeed < -120) {
+        } else if (!grounded && this.isTouchingWall() && ySpeed < -120) {
             ySpeed = -120;
         }
 
@@ -85,11 +97,24 @@ export default class PlayerMovement extends cc.Component {
             this.playAnim("fire_idle");
         }
 
-        const startedSprint = grounded
-            && this.prevGrounded
-            && !this.inQuicksand
-            && this.prevMoveX === 0
-            && this.moveX !== 0;
+        const runningNow = grounded && this.moveX !== 0 && !this.inQuicksand;
+
+        if (runningNow && !this.wasRunning) {
+            this.startRunSound();
+        }
+
+        if (!runningNow && this.wasRunning) {
+            this.stopRunSound();
+        }
+
+        this.wasRunning = runningNow;
+
+        const startedSprint =
+            grounded &&
+            this.prevGrounded &&
+            !this.inQuicksand &&
+            this.prevMoveX === 0 &&
+            this.moveX !== 0;
 
         if (startedSprint) {
             this.playSprintDust();
@@ -122,6 +147,12 @@ export default class PlayerMovement extends cc.Component {
             if (this.isGrounded() && !this.inQuicksand) {
                 const v = this.rb.linearVelocity;
                 this.rb.linearVelocity = cc.v2(v.x, this.jumpForce);
+
+                this.stopRunSound();
+
+                if (this.jumpSound) {
+                    cc.audioEngine.playEffect(this.jumpSound, false);
+                }
             }
         }
     }
@@ -143,6 +174,7 @@ export default class PlayerMovement extends cc.Component {
         if (other.node.group === "quicksand") {
             this.quicksandCount++;
             this.inQuicksand = true;
+            this.stopRunSound();
         }
     }
 
@@ -155,6 +187,7 @@ export default class PlayerMovement extends cc.Component {
 
     onPreSolve(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
         if (other.node.group !== "Platform") return;
+        if (!this.rb) return;
 
         const playerBottom = this.node.y - this.node.height / 2;
         const platformTop = other.node.y + other.node.height / 2;
@@ -196,6 +229,20 @@ export default class PlayerMovement extends cc.Component {
         return false;
     }
 
+    private startRunSound() {
+        if (!this.runSound) return;
+        if (this.runAudioId !== -1) return;
+
+        this.runAudioId = cc.audioEngine.playEffect(this.runSound, true);
+    }
+
+    private stopRunSound() {
+        if (this.runAudioId !== -1) {
+            cc.audioEngine.stopEffect(this.runAudioId);
+            this.runAudioId = -1;
+        }
+    }
+
     private playAnim(name: string) {
         if (!this.anim) return;
 
@@ -217,11 +264,9 @@ export default class PlayerMovement extends cc.Component {
         const dustIsChildOfPlayer = this.sprintDustNode.parent === this.node;
 
         if (dustIsChildOfPlayer) {
-            // Child node already inherits player flip, so keep local offset stable.
             this.sprintDustNode.setPosition(this.sprintDustOffsetX, this.sprintDustOffsetY);
             this.sprintDustNode.scaleX = 1;
         } else {
-            // World-space / non-child dust node needs manual facing adjustment.
             this.sprintDustNode.setPosition(face * this.sprintDustOffsetX, this.sprintDustOffsetY);
             this.sprintDustNode.scaleX = face;
         }
@@ -232,6 +277,7 @@ export default class PlayerMovement extends cc.Component {
 
     private updateSprintDust(dt: number) {
         if (!this.dustPlaying) return;
+
         if (!this.sprintDustNode || !this.sprintDustSprite || this.sprintDustFrames.length === 0) {
             this.dustPlaying = false;
             return;
