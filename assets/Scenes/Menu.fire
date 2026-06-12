@@ -134,7 +134,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 960,
+      "width": 1600,
       "height": 640
     },
     "_anchorPoint": {
@@ -146,7 +146,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        480,
+        800,
         320,
         0,
         0,
@@ -321,7 +321,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        0,
+        -341.573,
         0,
         0,
         0,
@@ -11459,7 +11459,7 @@
     "_enabled": true,
     "_designResolution": {
       "__type__": "cc.Size",
-      "width": 960,
+      "width": 1600,
       "height": 640
     },
     "_fitWidth": false,
