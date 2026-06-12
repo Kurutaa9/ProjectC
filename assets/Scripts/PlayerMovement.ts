@@ -36,6 +36,7 @@ export default class PlayerMovement extends cc.Component {
     private moveX: number = 0;
     private inQuicksand: boolean = false;
     private quicksandCount: number = 0;
+
     private prevMoveX: number = 0;
     private prevGrounded: boolean = false;
 
@@ -65,7 +66,6 @@ export default class PlayerMovement extends cc.Component {
     onDestroy() {
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_UP, this.onKeyUp, this);
-
         this.stopRunSound();
     }
 
@@ -99,13 +99,8 @@ export default class PlayerMovement extends cc.Component {
 
         const runningNow = grounded && this.moveX !== 0 && !this.inQuicksand;
 
-        if (runningNow && !this.wasRunning) {
-            this.startRunSound();
-        }
-
-        if (!runningNow && this.wasRunning) {
-            this.stopRunSound();
-        }
+        if (runningNow && !this.wasRunning) this.startRunSound();
+        if (!runningNow && this.wasRunning) this.stopRunSound();
 
         this.wasRunning = runningNow;
 
@@ -116,9 +111,7 @@ export default class PlayerMovement extends cc.Component {
             this.prevMoveX === 0 &&
             this.moveX !== 0;
 
-        if (startedSprint) {
-            this.playSprintDust();
-        }
+        if (startedSprint) this.playSprintDust();
 
         this.updateSprintDust(dt);
 
@@ -161,13 +154,8 @@ export default class PlayerMovement extends cc.Component {
         const leftKey = this.useArrowKeys ? cc.macro.KEY.left : cc.macro.KEY.a;
         const rightKey = this.useArrowKeys ? cc.macro.KEY.right : cc.macro.KEY.d;
 
-        if (event.keyCode === leftKey && this.moveX < 0) {
-            this.moveX = 0;
-        }
-
-        if (event.keyCode === rightKey && this.moveX > 0) {
-            this.moveX = 0;
-        }
+        if (event.keyCode === leftKey && this.moveX < 0) this.moveX = 0;
+        if (event.keyCode === rightKey && this.moveX > 0) this.moveX = 0;
     }
 
     onBeginContact(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
@@ -189,18 +177,29 @@ export default class PlayerMovement extends cc.Component {
         if (other.node.group !== "Platform") return;
         if (!this.rb) return;
 
-        const playerBottom = this.node.y - this.node.height / 2;
-        const platformTop = other.node.y + other.node.height / 2;
+        const selfBox = self as cc.PhysicsBoxCollider;
+        const otherBox = other as cc.PhysicsBoxCollider;
+
+        const playerBottom =
+            this.node.y +
+            selfBox.offset.y -
+            selfBox.size.height / 2;
+
+        const platformTop =
+            other.node.y +
+            otherBox.offset.y +
+            otherBox.size.height / 2;
+
         const v = this.rb.linearVelocity;
 
-        if (playerBottom < platformTop || v.y > 0) {
+        if (v.y > 0 || playerBottom < platformTop - 2) {
             contact.disabled = true;
         }
     }
 
     private isGrounded(): boolean {
         const start = this.node.convertToWorldSpaceAR(cc.v2(0, -8));
-        const end = cc.v2(start.x, start.y - 18);
+        const end = cc.v2(start.x, start.y - 22);
 
         const results = cc.director
             .getPhysicsManager()
@@ -214,14 +213,10 @@ export default class PlayerMovement extends cc.Component {
 
     private isTouchingWall(): boolean {
         const center = this.node.convertToWorldSpaceAR(cc.v2(0, 0));
-
-        const rightEnd = cc.v2(center.x + 14, center.y);
-        const leftEnd = cc.v2(center.x - 14, center.y);
-
         const physics = cc.director.getPhysicsManager();
 
-        const rightHits = physics.rayCast(center, rightEnd, cc.RayCastType.Closest);
-        const leftHits = physics.rayCast(center, leftEnd, cc.RayCastType.Closest);
+        const rightHits = physics.rayCast(center, cc.v2(center.x + 14, center.y), cc.RayCastType.Closest);
+        const leftHits = physics.rayCast(center, cc.v2(center.x - 14, center.y), cc.RayCastType.Closest);
 
         if (rightHits.length > 0 && rightHits[0].collider.node.group === "wall") return true;
         if (leftHits.length > 0 && leftHits[0].collider.node.group === "wall") return true;

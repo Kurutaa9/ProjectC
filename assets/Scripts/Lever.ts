@@ -2,10 +2,7 @@ const { ccclass, property } = cc._decorator;
 
 @ccclass
 export default class Lever extends cc.Component {
-    @property({
-        type: [cc.SpriteFrame],
-        tooltip: "Drag the 4 lever sprites here in order"
-    })
+    @property({ type: [cc.SpriteFrame] })
     leverFrames: cc.SpriteFrame[] = [];
 
     @property
@@ -14,53 +11,34 @@ export default class Lever extends cc.Component {
     @property(cc.Node)
     appearing: cc.Node | null = null;
 
-    @property({
-        type: cc.Node,
-        tooltip: "Node with Sprite for tile-appear smoke effect"
-    })
+    @property(cc.Node)
     appearFxNode: cc.Node | null = null;
 
-    @property({
-        type: [cc.SpriteFrame],
-        tooltip: "Drag diesmoke01..diesmoke08 in order"
-    })
+    @property([cc.SpriteFrame])
     appearFxFrames: cc.SpriteFrame[] = [];
 
-    @property({
-        tooltip: "Seconds per smoke frame"
-    })
+    @property
     appearFxFrameInterval: number = 0.05;
 
-    @property({
-        tooltip: "Scale multiplier for smoke effect"
-    })
+    @property
     appearFxScale: number = 1;
 
-    @property({
-        type: cc.Node,
-        tooltip: "Node with Sprite for lever pull smoke effect"
-    })
+    @property(cc.Node)
     leverFxNode: cc.Node | null = null;
 
-    @property({
-        type: [cc.SpriteFrame],
-        tooltip: "Drag lever smoke frames in order"
-    })
+    @property([cc.SpriteFrame])
     leverFxFrames: cc.SpriteFrame[] = [];
 
-    @property({
-        tooltip: "Seconds per lever smoke frame"
-    })
+    @property
     leverFxFrameInterval: number = 0.05;
 
-    @property({
-        tooltip: "Scale multiplier for lever smoke effect"
-    })
+    @property
     leverFxScale: number = 1;
 
     private sprite: cc.Sprite | null = null;
     private appearFxSprite: cc.Sprite | null = null;
     private leverFxSprite: cc.Sprite | null = null;
+
     private isAnimating: boolean = false;
     private playersInZone: number = 0;
 
@@ -89,8 +67,11 @@ export default class Lever extends cc.Component {
 
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
 
+        // Always start unpulled and hidden
+        this.isPulled = false;
+
         if (this.appearing) {
-            this.appearing.active = this.isPulled;
+            this.appearing.active = false;
         }
 
         this.updateVisual();
@@ -149,22 +130,17 @@ export default class Lever extends cc.Component {
 
     private playAnimation() {
         if (!this.sprite || this.leverFrames.length === 0) return;
-        const sprite = this.sprite;
 
         this.isAnimating = true;
 
         const framesToPlay = this.isPulled ? [0, 1, 2, 3] : [3, 2, 1, 0];
+        let currentFrameIndex = 0;
 
         this.unscheduleAllCallbacks();
 
-        let currentFrameIndex = 0;
-
         this.schedule(() => {
             const frame = this.leverFrames[framesToPlay[currentFrameIndex]];
-
-            if (frame) {
-                sprite.spriteFrame = frame;
-            }
+            if (frame) this.sprite.spriteFrame = frame;
 
             currentFrameIndex++;
 
@@ -189,6 +165,7 @@ export default class Lever extends cc.Component {
         this.isAppearFxPlaying = true;
         this.appearFxFrameIndex = 0;
         this.appearFxElapsed = 0;
+
         this.appearFxNode.scaleX = this.appearFxScale;
         this.appearFxNode.scaleY = this.appearFxScale;
         this.appearFxSprite.spriteFrame = this.appearFxFrames[0];
@@ -197,10 +174,7 @@ export default class Lever extends cc.Component {
 
     private updateAppearFx(dt: number) {
         if (!this.isAppearFxPlaying) return;
-        if (!this.appearFxNode || !this.appearFxSprite || this.appearFxFrames.length === 0) {
-            this.isAppearFxPlaying = false;
-            return;
-        }
+        if (!this.appearFxNode || !this.appearFxSprite || this.appearFxFrames.length === 0) return;
 
         this.appearFxElapsed += dt;
         if (this.appearFxElapsed < this.appearFxFrameInterval) return;
@@ -223,6 +197,7 @@ export default class Lever extends cc.Component {
         this.isLeverFxPlaying = true;
         this.leverFxFrameIndex = 0;
         this.leverFxElapsed = 0;
+
         this.leverFxNode.scaleX = this.leverFxScale;
         this.leverFxNode.scaleY = this.leverFxScale;
         this.leverFxSprite.spriteFrame = this.leverFxFrames[0];
@@ -231,10 +206,7 @@ export default class Lever extends cc.Component {
 
     private updateLeverFx(dt: number) {
         if (!this.isLeverFxPlaying) return;
-        if (!this.leverFxNode || !this.leverFxSprite || this.leverFxFrames.length === 0) {
-            this.isLeverFxPlaying = false;
-            return;
-        }
+        if (!this.leverFxNode || !this.leverFxSprite || this.leverFxFrames.length === 0) return;
 
         this.leverFxElapsed += dt;
         if (this.leverFxElapsed < this.leverFxFrameInterval) return;
