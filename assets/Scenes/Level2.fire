@@ -236,7 +236,7 @@
       "a": 255
     },
     "_depth": -1,
-    "_zoomRatio": 1,
+    "_zoomRatio": 0.5,
     "_targetTexture": null,
     "_fov": 60,
     "_orthoSize": 10,
@@ -5327,7 +5327,7 @@
       "ctor": "Float64Array",
       "array": [
         408.284,
-        498.602,
+        64.352,
         0,
         0,
         0,
@@ -7551,8 +7551,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        390.526,
-        556.801,
+        342.276,
+        68.735,
         0,
         0,
         0,

@@ -1,8 +1,14 @@
 {
   "title": "ProjectC",
   "packageName": "org.cocos2d.demo",
-  "startScene": "ca498f72-a550-4ee1-918a-409edba0a8dd",
-  "excludeScenes": [],
+  "startScene": "316697b5-490a-4b25-89aa-fdeb1fccdef1",
+  "excludeScenes": [
+    "d3940889-0283-4607-ac9d-c8f9f8c21831",
+    "d6bbce2c-9391-4d91-ab0f-5c45cf3f9576",
+    "f2c9d4ad-394c-4346-a45e-44f497fed46a",
+    "fea934da-820c-4147-a910-08531dbd1a71",
+    "a4ac4141-e1e4-4ad3-800a-a0cd2f05a420"
+  ],
   "orientation": {
     "landscapeRight": true,
     "landscapeLeft": true,
