@@ -1,9 +1,13 @@
 const { ccclass, property } = cc._decorator;
 
+import EndingDialogueBox, { EndingDialogueLine } from "./EndingDialogueBox";
+
 enum EndingState {
-    Exploring = 0,
-    Revealing = 1,
-    Completed = 2
+    IntroDialogue = 0,
+    Exploring = 1,
+    Revealing = 2,
+    PostChestDialogue = 3,
+    Completed = 4
 }
 
 @ccclass
@@ -39,13 +43,20 @@ export default class EndingScene extends cc.Component {
     @property(cc.Label)
     promptLabel: cc.Label = null;
 
-    // 方法一：直接拖音效檔案進來
     @property(cc.AudioClip)
     openChestAudio: cc.AudioClip = null;
 
-    // 方法二：可選。若你想用 AudioSource 播放，可以接這個。
     @property(cc.AudioSource)
     openChestAudioSource: cc.AudioSource = null;
+
+    @property(EndingDialogueBox)
+    dialogueBox: EndingDialogueBox = null;
+
+    @property([EndingDialogueLine])
+    introDialogues: EndingDialogueLine[] = [];
+
+    @property([EndingDialogueLine])
+    afterChestDialogues: EndingDialogueLine[] = [];
 
     @property
     menuSceneName: string = "Menu";
@@ -56,66 +67,62 @@ export default class EndingScene extends cc.Component {
     @property
     promptText: string = "Press SPACE to return to Menu";
 
-    // 閃爍次數
     @property
     flashTimes: number = 5;
 
-    // 每次閃白停留時間
     @property
     flashOnTime: number = 0.12;
 
-    // 每次閃白消失時間
     @property
     flashOffTime: number = 0.18;
 
-    // 搖晃總時間
     @property
     shakeDuration: number = 1.2;
 
-    // 搖晃強度
     @property
     shakeStrength: number = 14;
 
-    // 搖晃每一步的時間
     @property
     shakeStepTime: number = 0.05;
 
-    // Element Core 出現前等待時間
-    @property
-    elementCoreRevealDelay: number = 0.45;
-
-    // Element Core 漸入時間
     @property
     elementCoreFadeTime: number = 1.4;
 
-    // Element Core 從上方落下的距離
     @property
     elementCoreMoveDistance: number = 100;
 
-    // 成功文字出現延遲
     @property
     resultLabelDelay: number = 0.85;
 
-    // 成功文字漸入時間
     @property
     resultLabelFadeTime: number = 0.8;
 
-    // Press Space 文字出現延遲
     @property
-    promptLabelDelay: number = 2.2;
+    promptLabelDelay: number = 5;
 
-    // Press Space 文字漸入時間
     @property
     promptLabelFadeTime: number = 0.7;
 
-    private state: EndingState = EndingState.Exploring;
+    @property([cc.Node])
+    characterNodes: cc.Node[] = [];
+
+    @property
+    restoreCharacterYOffset: number = 4;
+    @property
+    autoWalkSpeed: number = 60;
+    @property
+    chestTriggerDistance: number = 45;
+
+    private charactersFrozen: boolean = false;
+    private frozenCharacterPositions: cc.Vec2[] = [];
+    private originalGravityScales: number[] = [];
+    private originalRigidBodyTypes: number[] = [];
+    private state: EndingState = EndingState.IntroDialogue;
 
     private elementCoreTargetY: number = 0;
 
     onLoad(): void {
         cc.director.getCollisionManager().enabled = true;
-
-        // 如果你有用 PhysicsBoxCollider / RigidBody，這行需要開。
         cc.director.getPhysicsManager().enabled = true;
 
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
@@ -123,6 +130,7 @@ export default class EndingScene extends cc.Component {
 
     start(): void {
         this.initEndingScene();
+        this.startIntroDialogue();
     }
 
     onDestroy(): void {
@@ -130,7 +138,7 @@ export default class EndingScene extends cc.Component {
     }
 
     private initEndingScene(): void {
-        this.state = EndingState.Exploring;
+        this.state = EndingState.IntroDialogue;
 
         if (!this.shakeNode) {
             this.shakeNode = this.worldRoot;
@@ -174,28 +182,62 @@ export default class EndingScene extends cc.Component {
         }
     }
 
+    private startIntroDialogue(): void {
+        this.state = EndingState.IntroDialogue;
+
+        this.setCharactersFrozen(true);
+
+        if (this.dialogueBox && this.introDialogues.length > 0) {
+            this.dialogueBox.play(this.introDialogues, () => {
+                this.setCharactersFrozen(false);
+                this.state = EndingState.Exploring;
+            });
+        } else {
+            this.setCharactersFrozen(false);
+            this.state = EndingState.Exploring;
+        }
+    }
+
     public startEndingSequence(): void {
         if (this.state !== EndingState.Exploring) {
             return;
         }
 
         this.state = EndingState.Revealing;
+        this.setCharactersFrozen(true);
 
-        // 重點 1：音效放在最前面，碰到寶箱後立刻播放
         this.playOpenChestAudio();
-
         this.openChest();
         this.playFlashEffect();
         this.playShakeEffect();
 
-        // 重點 2：Core 稍微晚一點出現，讓閃爍和搖晃先發生
+        const waitTime = this.getFlashTotalTime();
+
         this.scheduleOnce(() => {
+            this.startPostChestDialogue();
+        }, waitTime);
+    }
+
+    private startPostChestDialogue(): void {
+        this.state = EndingState.PostChestDialogue;
+
+        this.setCharactersFrozen(true);
+
+        if (this.dialogueBox && this.afterChestDialogues.length > 0) {
+            this.dialogueBox.play(this.afterChestDialogues, () => {
+                this.showElementCoreAndResult();
+            });
+        } else {
             this.showElementCoreAndResult();
-        }, this.elementCoreRevealDelay);
+        }
     }
 
     public hasEndingStarted(): boolean {
         return this.state !== EndingState.Exploring;
+    }
+
+    private getFlashTotalTime(): number {
+        return this.flashTimes * (this.flashOnTime + this.flashOffTime);
     }
 
     private openChest(): void {
@@ -211,14 +253,12 @@ export default class EndingScene extends cc.Component {
     }
 
     private playOpenChestAudio(): void {
-        // 優先使用 AudioSource，如果你有接的話
         if (this.openChestAudioSource) {
             this.openChestAudioSource.stop();
             this.openChestAudioSource.play();
             return;
         }
 
-        // 沒有 AudioSource 就用 AudioClip
         if (this.openChestAudio) {
             cc.audioEngine.playEffect(this.openChestAudio, false);
         }
@@ -333,5 +373,173 @@ export default class EndingScene extends cc.Component {
         }
 
         cc.director.loadScene(this.menuSceneName);
+    }
+
+    private setCharactersFrozen(frozen: boolean): void {
+        this.charactersFrozen = frozen;
+
+        if (frozen) {
+            this.frozenCharacterPositions = [];
+            this.originalRigidBodyTypes = [];
+            this.originalGravityScales = [];
+
+            for (let i = 0; i < this.characterNodes.length; i++) {
+                const character = this.characterNodes[i];
+
+                if (!character) {
+                    continue;
+                }
+
+                this.frozenCharacterPositions[i] = cc.v2(character.x, character.y);
+
+                const rigidBody = character.getComponent(cc.RigidBody);
+
+                if (rigidBody) {
+                    this.originalRigidBodyTypes[i] = rigidBody.type;
+                    this.originalGravityScales[i] = rigidBody.gravityScale;
+
+                    rigidBody.linearVelocity = cc.v2(0, 0);
+                    rigidBody.angularVelocity = 0;
+                    rigidBody.gravityScale = 0;
+
+                    // 對話期間完全固定
+                    rigidBody.type = cc.RigidBodyType.Static;
+
+                    this.syncRigidBodyDirect(rigidBody);
+                }
+            }
+
+            return;
+        }
+
+        // 對話結束後：恢復成可移動狀態，但不要恢復重力
+        for (let i = 0; i < this.characterNodes.length; i++) {
+            const character = this.characterNodes[i];
+
+            if (!character) {
+                continue;
+            }
+
+            if (this.frozenCharacterPositions[i]) {
+                character.x = this.frozenCharacterPositions[i].x;
+                character.y = this.frozenCharacterPositions[i].y + this.restoreCharacterYOffset;
+            }
+
+            const rigidBody = character.getComponent(cc.RigidBody);
+
+            if (rigidBody) {
+                rigidBody.linearVelocity = cc.v2(0, 0);
+                rigidBody.angularVelocity = 0;
+
+                // Ending Scene 不恢復重力，避免角色掉下去
+                rigidBody.gravityScale = 0;
+
+                // 用 Kinematic 讓角色可以被程式移動，但不受重力影響
+                rigidBody.type = cc.RigidBodyType.Kinematic;
+
+                this.syncRigidBodyDirect(rigidBody);
+            }
+        }
+
+        this.frozenCharacterPositions = [];
+        this.originalGravityScales = [];
+        this.originalRigidBodyTypes = [];
+    }
+
+    private syncRigidBodyDirect(rigidBody: cc.RigidBody): void {
+        if (!rigidBody) {
+            return;
+        }
+
+        const body: any = rigidBody as any;
+
+        if (body.syncPosition) {
+            body.syncPosition(true);
+        }
+
+        if (body.syncRotation) {
+            body.syncRotation(true);
+        }
+    }
+
+    update(dt: number): void {
+        if (this.charactersFrozen) {
+            this.keepCharactersFrozen();
+            return;
+        }
+
+        if (this.state === EndingState.Exploring) {
+            this.autoWalkCharacters(dt);
+            this.checkChestReached();
+        }
+    }
+
+    private keepCharactersFrozen(): void {
+        for (let i = 0; i < this.characterNodes.length; i++) {
+            const character = this.characterNodes[i];
+
+            if (!character || !this.frozenCharacterPositions[i]) {
+                continue;
+            }
+
+            character.x = this.frozenCharacterPositions[i].x;
+            character.y = this.frozenCharacterPositions[i].y;
+
+            const rigidBody = character.getComponent(cc.RigidBody);
+
+            if (rigidBody) {
+                rigidBody.linearVelocity = cc.v2(0, 0);
+                rigidBody.angularVelocity = 0;
+                rigidBody.gravityScale = 0;
+
+                this.syncRigidBodyDirect(rigidBody);
+            }
+        }
+    }
+
+    private autoWalkCharacters(dt: number): void {
+        for (let i = 0; i < this.characterNodes.length; i++) {
+            const character = this.characterNodes[i];
+
+            if (!character) {
+                continue;
+            }
+
+            character.x += this.autoWalkSpeed * dt;
+
+            const rigidBody = character.getComponent(cc.RigidBody);
+
+            if (rigidBody) {
+                rigidBody.linearVelocity = cc.v2(0, 0);
+                rigidBody.angularVelocity = 0;
+                rigidBody.gravityScale = 0;
+                this.syncRigidBodyDirect(rigidBody);
+            }
+        }
+    }
+    private checkChestReached(): void {
+        if (this.state !== EndingState.Exploring) {
+            return;
+        }
+
+        if (!this.chestNode) {
+            return;
+        }
+
+        for (let i = 0; i < this.characterNodes.length; i++) {
+            const character = this.characterNodes[i];
+
+            if (!character) {
+                continue;
+            }
+
+            const distanceX = Math.abs(character.x - this.chestNode.x);
+            const distanceY = Math.abs(character.y - this.chestNode.y);
+
+            if (distanceX <= this.chestTriggerDistance && distanceY <= 120) {
+                this.startEndingSequence();
+                return;
+            }
+        }
     }
 }
