@@ -1,8 +1,7 @@
-const {ccclass, property} = cc._decorator;
+const { ccclass, property } = cc._decorator;
 
 @ccclass
 export default class Lever extends cc.Component {
-
     @property({
         type: [cc.SpriteFrame],
         tooltip: "Drag the 4 lever sprites here in order"
@@ -17,46 +16,30 @@ export default class Lever extends cc.Component {
     private playersInZone: number = 0;
 
     onLoad() {
+        cc.director.getCollisionManager().enabled = true;
+
         this.sprite = this.getComponent(cc.Sprite);
+
         if (!this.sprite) {
             cc.error("Lever script requires a Sprite component on the node!");
+            return;
         }
 
-        // Add keyboard event listener to trigger the lever pull
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
-        
-        // Ensure visual state matches property on start
+
         this.updateVisual();
     }
 
     onDestroy() {
-        // Remove keyboard event listener to prevent memory leaks
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
     }
 
-    onKeyDown(event: cc.Event.EventKeyboard) {
-        // Only interact if a player is in the zone and animation is not playing
-        if (this.playersInZone > 0 && !this.isAnimating) {
-            if (event.keyCode === cc.macro.KEY.e || event.keyCode === cc.macro.KEY.slash) {
-                this.onInteract();
-            }
+    private onKeyDown(event: cc.Event.EventKeyboard) {
+        if (event.keyCode === cc.macro.KEY.e && this.playersInZone > 0 && !this.isAnimating) {
+            this.onInteract();
         }
     }
 
-    // Physics 2D Contact Callbacks
-    onBeginContact(contact: cc.PhysicsContact, selfCollider: cc.PhysicsCollider, otherCollider: cc.PhysicsCollider) {
-        if (otherCollider.node.getComponent("PlayerMovement")) {
-            this.playersInZone++;
-        }
-    }
-
-    onEndContact(contact: cc.PhysicsContact, selfCollider: cc.PhysicsCollider, otherCollider: cc.PhysicsCollider) {
-        if (otherCollider.node.getComponent("PlayerMovement")) {
-            this.playersInZone--;
-        }
-    }
-
-    // Normal 2D Collision Callbacks (in case you use standard colliders instead of physics)
     onCollisionEnter(other: cc.Collider, self: cc.Collider) {
         if (other.node.getComponent("PlayerMovement")) {
             this.playersInZone++;
@@ -65,49 +48,49 @@ export default class Lever extends cc.Component {
 
     onCollisionExit(other: cc.Collider, self: cc.Collider) {
         if (other.node.getComponent("PlayerMovement")) {
-            this.playersInZone--;
+            this.playersInZone = Math.max(0, this.playersInZone - 1);
         }
     }
 
-    onInteract() {
+    private onInteract() {
         this.isPulled = !this.isPulled;
         this.playAnimation();
     }
 
-    playAnimation() {
-        if (this.leverFrames.length === 0) return;
-        
+    private playAnimation() {
+        if (!this.sprite || this.leverFrames.length === 0) return;
+
         this.isAnimating = true;
-        
-        let framesToPlay = this.isPulled ? 
-            [0, 1, 2, 3] : // Pulling down (1 -> 4)
-            [3, 2, 1, 0];  // Pulling up (4 -> 1)
-            
+
+        const framesToPlay = this.isPulled
+            ? [0, 1, 2, 3]
+            : [3, 2, 1, 0];
+
         this.unscheduleAllCallbacks();
-        
+
         let currentFrameIndex = 0;
-        
-        // Schedule a callback to change the sprite frame rapidly like an animation
+
         this.schedule(() => {
-            let frameRef = this.leverFrames[framesToPlay[currentFrameIndex]];
-            if (frameRef) {
-                this.sprite.spriteFrame = frameRef;
+            const frame = this.leverFrames[framesToPlay[currentFrameIndex]];
+
+            if (frame) {
+                this.sprite.spriteFrame = frame;
             }
-            
+
             currentFrameIndex++;
-            
-            // Finished animating
+
             if (currentFrameIndex >= framesToPlay.length) {
                 this.isAnimating = false;
+                this.updateVisual();
             }
-        }, 0.05, framesToPlay.length - 1, 0); 
+        }, 0.05, framesToPlay.length - 1, 0);
     }
 
-    updateVisual() {
-        if (this.leverFrames.length === 0 || !this.sprite) return;
-        // Set to the first frame if not pulled, or the last frame if pulled
-        this.sprite.spriteFrame = this.isPulled ? 
-            this.leverFrames[this.leverFrames.length - 1] : 
-            this.leverFrames[0];
+    private updateVisual() {
+        if (!this.sprite || this.leverFrames.length === 0) return;
+
+        this.sprite.spriteFrame = this.isPulled
+            ? this.leverFrames[this.leverFrames.length - 1]
+            : this.leverFrames[0];
     }
 }
