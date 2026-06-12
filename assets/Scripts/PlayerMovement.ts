@@ -2,23 +2,19 @@ const { ccclass, property } = cc._decorator;
 
 @ccclass
 export default class PlayerMovement extends cc.Component {
-    @property
-    speed: number = 200;
+    @property speed: number = 200;
+    @property jumpForce: number = 900;
 
-    @property
-    jumpForce: number = 450;
-
-    @property
-    gravity: number = 1200;
-
-    private moveX: number = 0;
-    private velocityY: number = 0;
-    private isGrounded: boolean = false;
+    private rb: cc.RigidBody = null;
     private anim: cc.Animation = null;
+    private moveX: number = 0;
+    private groundCount: number = 0;
 
     onLoad() {
-        cc.director.getCollisionManager().enabled = true;
+        cc.director.getPhysicsManager().enabled = true;
+        cc.director.getPhysicsManager().gravity = cc.v2(0, -900);
 
+        this.rb = this.getComponent(cc.RigidBody);
         this.anim = this.getComponent(cc.Animation);
 
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
@@ -31,24 +27,19 @@ export default class PlayerMovement extends cc.Component {
     }
 
     update(dt: number) {
-        // left / right
-        this.node.x += this.moveX * this.speed * dt;
+        if (!this.rb) return;
 
-        // gravity
-        this.velocityY -= this.gravity * dt;
-        this.node.y += this.velocityY * dt;
+        const v = this.rb.linearVelocity;
+        this.rb.linearVelocity = cc.v2(this.moveX * this.speed, v.y);
 
-        // animation
-        if (!this.isGrounded) {
-            this.playAnim("fire_jump");
-        } else if (this.moveX !== 0) {
-            this.playAnim("fire_run");
-        } else {
-            this.playAnim("fire_idle");
-        }
+        if (this.groundCount <= 0) this.playAnim("fire_jump");
+        else if (this.moveX !== 0) this.playAnim("fire_run");
+        else this.playAnim("fire_idle");
     }
 
     private onKeyDown(event: cc.Event.EventKeyboard) {
+        if (!this.rb) return;
+
         if (event.keyCode === cc.macro.KEY.a) {
             this.moveX = -1;
             this.node.scaleX = -Math.abs(this.node.scaleX);
@@ -59,9 +50,16 @@ export default class PlayerMovement extends cc.Component {
             this.node.scaleX = Math.abs(this.node.scaleX);
         }
 
-        if (event.keyCode === cc.macro.KEY.w && this.isGrounded) {
-            this.velocityY = this.jumpForce;
-            this.isGrounded = false;
+        if (event.keyCode === cc.macro.KEY.w || event.keyCode === cc.macro.KEY.space) {
+            cc.log("Jump key pressed");
+
+            const v = this.rb.linearVelocity;
+
+            if (this.groundCount > 0 || Math.abs(v.y) < 5) {
+                this.rb.linearVelocity = cc.v2(v.x, this.jumpForce);
+                this.groundCount = 0;
+                cc.log("JUMP");
+            }
         }
     }
 
@@ -75,32 +73,17 @@ export default class PlayerMovement extends cc.Component {
         }
     }
 
-    onCollisionEnter(other: cc.Collider, self: cc.Collider) {
-        this.handleGroundCollision(other, self);
-    }
-
-    onCollisionStay(other: cc.Collider, self: cc.Collider) {
-        this.handleGroundCollision(other, self);
-    }
-
-    onCollisionExit(other: cc.Collider, self: cc.Collider) {
+    onBeginContact(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
         if (other.node.group === "ground") {
-            this.isGrounded = false;
+            this.groundCount++;
+            cc.log("touch ground", this.groundCount);
         }
     }
 
-    private handleGroundCollision(other: cc.Collider, self: cc.Collider) {
-        if (other.node.group !== "ground") return;
-
-        // only land when falling
-        if (this.velocityY <= 0) {
-            this.isGrounded = true;
-            this.velocityY = 0;
-
-            const groundTop = other.node.y + other.node.height / 2;
-            const playerHalfHeight = self.node.height / 2;
-
-            this.node.y = groundTop + playerHalfHeight;
+    onEndContact(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
+        if (other.node.group === "ground") {
+            this.groundCount = Math.max(0, this.groundCount - 1);
+            cc.log("leave ground", this.groundCount);
         }
     }
 

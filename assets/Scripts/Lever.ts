@@ -16,7 +16,7 @@ export default class Lever extends cc.Component {
     private playersInZone: number = 0;
 
     onLoad() {
-        cc.director.getCollisionManager().enabled = true;
+        cc.director.getPhysicsManager().enabled = true;
 
         this.sprite = this.getComponent(cc.Sprite);
 
@@ -26,7 +26,6 @@ export default class Lever extends cc.Component {
         }
 
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
-
         this.updateVisual();
     }
 
@@ -35,18 +34,22 @@ export default class Lever extends cc.Component {
     }
 
     private onKeyDown(event: cc.Event.EventKeyboard) {
-        if (event.keyCode === cc.macro.KEY.e && this.playersInZone > 0 && !this.isAnimating) {
+        if (
+            (event.keyCode === cc.macro.KEY.e || event.keyCode === cc.macro.KEY.slash) &&
+            this.playersInZone > 0 &&
+            !this.isAnimating
+        ) {
             this.onInteract();
         }
     }
 
-    onCollisionEnter(other: cc.Collider, self: cc.Collider) {
+    onBeginContact(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
         if (other.node.getComponent("PlayerMovement")) {
             this.playersInZone++;
         }
     }
 
-    onCollisionExit(other: cc.Collider, self: cc.Collider) {
+    onEndContact(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
         if (other.node.getComponent("PlayerMovement")) {
             this.playersInZone = Math.max(0, this.playersInZone - 1);
         }
@@ -62,9 +65,7 @@ export default class Lever extends cc.Component {
 
         this.isAnimating = true;
 
-        const framesToPlay = this.isPulled
-            ? [0, 1, 2, 3]
-            : [3, 2, 1, 0];
+        const framesToPlay = this.isPulled ? [0, 1, 2, 3] : [3, 2, 1, 0];
 
         this.unscheduleAllCallbacks();
 
