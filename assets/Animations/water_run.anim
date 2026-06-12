@@ -3,7 +3,7 @@
   "_name": "water_run",
   "_objFlags": 0,
   "_native": "",
-  "_duration": 7.1,
+  "_duration": 3.6,
   "sample": 10,
   "speed": 1,
   "wrapMode": 2,
@@ -18,43 +18,43 @@
             }
           },
           {
-            "frame": 1,
+            "frame": 0.5,
             "value": {
               "__uuid__": "6871eb25-ce4e-4c07-a27c-291812692c6f"
             }
           },
           {
-            "frame": 2,
+            "frame": 1,
             "value": {
               "__uuid__": "ac4ccad7-054d-4224-b32f-fb292b2093ec"
             }
           },
           {
-            "frame": 3,
+            "frame": 1.5,
             "value": {
               "__uuid__": "e900562e-ad44-4442-92df-9db6867918e5"
             }
           },
           {
-            "frame": 4,
+            "frame": 2,
             "value": {
               "__uuid__": "a138a207-a09d-47e4-914a-aac73cb3ab23"
             }
           },
           {
-            "frame": 5,
+            "frame": 2.5,
             "value": {
               "__uuid__": "fc001c77-0b11-4202-ad02-b10fce16e23d"
             }
           },
           {
-            "frame": 6,
+            "frame": 3,
             "value": {
               "__uuid__": "9842692d-6fe9-4396-8ef9-8d35db650aa4"
             }
           },
           {
-            "frame": 7,
+            "frame": 3.5,
             "value": {
               "__uuid__": "8c915d47-fcf8-480c-bcb1-b050ab73ee32"
             }

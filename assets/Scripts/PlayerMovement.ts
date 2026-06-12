@@ -4,6 +4,7 @@ const { ccclass, property } = cc._decorator;
 export default class PlayerMovement extends cc.Component {
     @property speed: number = 200;
     @property jumpForce: number = 900;
+    @property useArrowKeys: boolean = false;
 
     private rb: cc.RigidBody = null;
     private anim: cc.Animation = null;
@@ -40,36 +41,74 @@ export default class PlayerMovement extends cc.Component {
     private onKeyDown(event: cc.Event.EventKeyboard) {
         if (!this.rb) return;
 
-        if (event.keyCode === cc.macro.KEY.a) {
-            this.moveX = -1;
-            this.node.scaleX = -Math.abs(this.node.scaleX);
+        // Fireboy (WASD)
+        if (!this.useArrowKeys) {
+
+            if (event.keyCode === cc.macro.KEY.a) {
+                this.moveX = -1;
+                this.node.scaleX = -Math.abs(this.node.scaleX);
+            }
+
+            if (event.keyCode === cc.macro.KEY.d) {
+                this.moveX = 1;
+                this.node.scaleX = Math.abs(this.node.scaleX);
+            }
+
+            if (event.keyCode === cc.macro.KEY.w) {
+                const v = this.rb.linearVelocity;
+
+                if (this.groundCount > 0 || Math.abs(v.y) < 5) {
+                    this.rb.linearVelocity = cc.v2(v.x, this.jumpForce);
+                    this.groundCount = 0;
+                }
+            }
         }
 
-        if (event.keyCode === cc.macro.KEY.d) {
-            this.moveX = 1;
-            this.node.scaleX = Math.abs(this.node.scaleX);
-        }
+        // Watergirl (Arrow Keys)
+        else {
 
-        if (event.keyCode === cc.macro.KEY.w || event.keyCode === cc.macro.KEY.space) {
-            cc.log("Jump key pressed");
+            if (event.keyCode === cc.macro.KEY.left) {
+                this.moveX = -1;
+                this.node.scaleX = -Math.abs(this.node.scaleX);
+            }
 
-            const v = this.rb.linearVelocity;
+            if (event.keyCode === cc.macro.KEY.right) {
+                this.moveX = 1;
+                this.node.scaleX = Math.abs(this.node.scaleX);
+            }
 
-            if (this.groundCount > 0 || Math.abs(v.y) < 5) {
-                this.rb.linearVelocity = cc.v2(v.x, this.jumpForce);
-                this.groundCount = 0;
-                cc.log("JUMP");
+            if (event.keyCode === cc.macro.KEY.up) {
+                const v = this.rb.linearVelocity;
+
+                if (this.groundCount > 0 || Math.abs(v.y) < 5) {
+                    this.rb.linearVelocity = cc.v2(v.x, this.jumpForce);
+                    this.groundCount = 0;
+                }
             }
         }
     }
 
     private onKeyUp(event: cc.Event.EventKeyboard) {
-        if (event.keyCode === cc.macro.KEY.a && this.moveX < 0) {
-            this.moveX = 0;
-        }
 
-        if (event.keyCode === cc.macro.KEY.d && this.moveX > 0) {
-            this.moveX = 0;
+        if (!this.useArrowKeys) {
+
+            if (event.keyCode === cc.macro.KEY.a && this.moveX < 0) {
+                this.moveX = 0;
+            }
+
+            if (event.keyCode === cc.macro.KEY.d && this.moveX > 0) {
+                this.moveX = 0;
+            }
+        }
+        else {
+
+            if (event.keyCode === cc.macro.KEY.left && this.moveX < 0) {
+                this.moveX = 0;
+            }
+
+            if (event.keyCode === cc.macro.KEY.right && this.moveX > 0) {
+                this.moveX = 0;
+            }
         }
     }
 
