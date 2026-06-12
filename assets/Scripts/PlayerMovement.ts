@@ -10,7 +10,10 @@ export default class PlayerMovement extends cc.Component {
 
     private rb: cc.RigidBody = null;
     private anim: cc.Animation = null;
+
     private moveX: number = 0;
+    private inQuicksand: boolean = false;
+    private quicksandCount: number = 0;
 
     onLoad() {
         cc.director.getPhysicsManager().enabled = true;
@@ -32,13 +35,31 @@ export default class PlayerMovement extends cc.Component {
         if (!this.rb) return;
 
         const v = this.rb.linearVelocity;
-        this.rb.linearVelocity = cc.v2(this.moveX * this.speed, v.y);
 
-        const grounded = this.isGrounded();
+        let xSpeed = this.moveX * this.speed;
+        let ySpeed = v.y;
 
-        if (!grounded) this.playAnim("fire_jump");
-        else if (this.moveX !== 0) this.playAnim("fire_run");
-        else this.playAnim("fire_idle");
+        if (this.inQuicksand) {
+            xSpeed = this.moveX * (this.speed * 0.45);
+
+            // do not allow fast falling inside quicksand
+            ySpeed = Math.max(v.y, -15);
+        } 
+        else if (!this.isGrounded() && this.isTouchingWall() && ySpeed < -120) {
+            ySpeed = -120;
+        }
+
+        this.rb.linearVelocity = cc.v2(xSpeed, ySpeed);
+
+        if (this.inQuicksand) {
+            this.playAnim("fire_idle");
+        } else if (!this.isGrounded()) {
+            this.playAnim("fire_jump");
+        } else if (this.moveX !== 0) {
+            this.playAnim("fire_run");
+        } else {
+            this.playAnim("fire_idle");
+        }
     }
 
     private onKeyDown(event: cc.Event.EventKeyboard) {
@@ -59,7 +80,7 @@ export default class PlayerMovement extends cc.Component {
         }
 
         if (event.keyCode === jumpKey) {
-            if (this.isGrounded()) {
+            if (this.isGrounded() && !this.inQuicksand) {
                 const v = this.rb.linearVelocity;
                 this.rb.linearVelocity = cc.v2(v.x, this.jumpForce);
             }
@@ -79,6 +100,20 @@ export default class PlayerMovement extends cc.Component {
         }
     }
 
+    onBeginContact(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
+        if (other.node.group === "quicksand") {
+            this.quicksandCount++;
+            this.inQuicksand = true;
+        }
+    }
+
+    onEndContact(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
+        if (other.node.group === "quicksand") {
+            this.quicksandCount = Math.max(0, this.quicksandCount - 1);
+            this.inQuicksand = this.quicksandCount > 0;
+        }
+    }
+
     private isGrounded(): boolean {
         const start = this.node.convertToWorldSpaceAR(cc.v2(0, -8));
         const end = cc.v2(start.x, start.y - 18);
@@ -90,6 +125,28 @@ export default class PlayerMovement extends cc.Component {
         if (results.length <= 0) return false;
 
         return results[0].collider.node.group === "ground";
+    }
+
+    private isTouchingWall(): boolean {
+        const center = this.node.convertToWorldSpaceAR(cc.v2(0, 0));
+
+        const rightEnd = cc.v2(center.x + 14, center.y);
+        const leftEnd = cc.v2(center.x - 14, center.y);
+
+        const physics = cc.director.getPhysicsManager();
+
+        const rightHits = physics.rayCast(center, rightEnd, cc.RayCastType.Closest);
+        const leftHits = physics.rayCast(center, leftEnd, cc.RayCastType.Closest);
+
+        if (rightHits.length > 0 && rightHits[0].collider.node.group === "wall") {
+            return true;
+        }
+
+        if (leftHits.length > 0 && leftHits[0].collider.node.group === "wall") {
+            return true;
+        }
+
+        return false;
     }
 
     private playAnim(name: string) {
