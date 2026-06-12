@@ -358,7 +358,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 50,
+      "width": 670,
       "height": 50.4
     },
     "_anchorPoint": {
@@ -410,8 +410,8 @@
     ],
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
-    "_string": "Label",
-    "_N$string": "Label",
+    "_string": "ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo",
+    "_N$string": "ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo",
     "_fontSize": 10,
     "_lineHeight": 40,
     "_enableWrapText": true,
@@ -423,7 +423,7 @@
     "_batchAsBitmap": false,
     "_styleFlags": 0,
     "_underlineHeight": 0,
-    "_N$horizontalAlign": 1,
+    "_N$horizontalAlign": 0,
     "_N$verticalAlign": 1,
     "_N$fontFamily": "Arial",
     "_N$overflow": 0,
