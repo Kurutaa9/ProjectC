@@ -6,7 +6,7 @@ import PlayerKey from "./PlayerKey";
 export default class TargetKey extends cc.Component {
 
     @property(cc.Prefab)
-    playerKeyPrefab: cc.Prefab = null;
+    playerKeyPrefab: cc.Prefab | null = null;
 
     private collected: boolean = false;
 
@@ -45,18 +45,13 @@ export default class TargetKey extends cc.Component {
             return directChild;
         }
 
-        const scene = cc.director.getScene();
-        if (scene) {
-            const sceneKey = this.findNodeByName(scene, "Player_key");
-            if (sceneKey) {
-                return sceneKey;
-            }
-        }
-
         if (this.playerKeyPrefab) {
             const newKey = cc.instantiate(this.playerKeyPrefab);
             newKey.name = "Player_key";
-            cc.director.getScene().addChild(newKey);
+            const scene = cc.director.getScene();
+            if (scene) {
+                scene.addChild(newKey);
+            }
             return newKey;
         }
 
@@ -86,23 +81,4 @@ export default class TargetKey extends cc.Component {
         return false;
     }
 
-    private findNodeByName(root: cc.Node, targetName: string): cc.Node | null {
-        if (!root) {
-            return null;
-        }
-
-        if (root.name === targetName) {
-            return root;
-        }
-
-        for (let i = 0; i < root.childrenCount; i++) {
-            const child = root.children[i];
-            const match = this.findNodeByName(child, targetName);
-            if (match) {
-                return match;
-            }
-        }
-
-        return null;
-    }
 }
