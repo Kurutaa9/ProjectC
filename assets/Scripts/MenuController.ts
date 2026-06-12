@@ -10,27 +10,39 @@ export default class MenuController extends cc.Component {
     // ==========================================
     @property(cc.Node) leaderboardModal: cc.Node = null;
     @property(cc.Node) accountModal: cc.Node = null; 
+    @property(cc.Node) settingsModal: cc.Node = null;
 
+    // --- 🌟 新增：主畫面要隱藏的 UI ---
+    @property(cc.Node) titleNode: cc.Node = null;
+    @property(cc.Node) startBtnNode: cc.Node = null;
+    @property(cc.Node) leaderboardBtnNode: cc.Node = null;
+    
+    // --- 🌟 新增：全螢幕透明關閉按鈕 ---
+    @property(cc.Node) closeBgBtn: cc.Node = null;
+
+    // --- Account 相關 ---
     @property(cc.Node) profileView: cc.Node = null;   
     @property(cc.Node) editView: cc.Node = null;      
-
     @property(cc.Label) usernameLabel: cc.Label = null; 
     @property(cc.Label) scoreLabel: cc.Label = null;    
-
     @property(cc.EditBox) usernameEditBox: cc.EditBox = null;  
     @property(cc.EditBox) oldPasswordEditBox: cc.EditBox = null; 
     @property(cc.EditBox) newPasswordEditBox: cc.EditBox = null; 
 
-    onLoad () {
-        this.closeLeaderboardModal();
-        this.closeAccountModal();
-        
-        if (this.settingsModal) {
-            this.settingsModal.active = false;
-        }
+    // --- Settings 相關 ---
+    @property(cc.Slider) bgmSlider: cc.Slider = null;
+    @property(cc.Slider) sfxSlider: cc.Slider = null;
+    @property(cc.Sprite) bgmIcon: cc.Sprite = null;
+    @property(cc.Sprite) sfxIcon: cc.Sprite = null;
+    @property([cc.SpriteFrame]) sfxFrames: cc.SpriteFrame[] = [];
+    @property(cc.SpriteFrame) bgmNormalFrame: cc.SpriteFrame = null;
+    @property(cc.SpriteFrame) bgmMutedFrame: cc.SpriteFrame = null;
 
-        // 🌟 遊戲載入時，從 LocalStorage 讀取玩家存好的音量
-        // 如果是第一次玩 (沒存過)，就給預設值 0.5
+    onLoad () {
+        // 遊戲一開始，確保全部 Modal 都是關的，主畫面是正常顯示的
+        this.closeAllModals();
+
+        // 讀取音量設定
         let savedBgm = cc.sys.localStorage.getItem("bgmVolume");
         let savedSfx = cc.sys.localStorage.getItem("sfxVolume");
         
@@ -40,53 +52,78 @@ export default class MenuController extends cc.Component {
         if (this.bgmSlider && this.sfxSlider) {
             this.bgmSlider.progress = bgmVol;
             this.sfxSlider.progress = sfxVol;
-
-            // 主動呼叫一次事件，讓 Icon 圖案一開始就顯示正確的狀態
             this.onBGMSliderMoved(this.bgmSlider);
             this.onSFXSliderMoved(this.sfxSlider);
         }
     }
 
     // ==========================================
-    // 2. 排行榜功能
+    // 🌟 核心控制邏輯：總開關
     // ==========================================
-    openLeaderboardModal () {
-        this.leaderboardModal.active = true;
+    
+    // 關閉所有彈窗，並恢復主畫面
+    public closeAllModals () {
+        if (this.leaderboardModal) this.leaderboardModal.active = false;
+        if (this.accountModal) this.accountModal.active = false;
+        if (this.settingsModal) this.settingsModal.active = false;
+
+        // 恢復主畫面按鈕
+        if (this.titleNode) this.titleNode.active = true;
+        if (this.startBtnNode) this.startBtnNode.active = true;
+        if (this.leaderboardBtnNode) this.leaderboardBtnNode.active = true;
+        
+        // 隱藏透明遮罩
+        if (this.closeBgBtn) this.closeBgBtn.active = false;
     }
 
     closeLeaderboardModal () {
-        this.leaderboardModal.active = false;
+        this.closeAllModals();
     }
 
-    // ==========================================
-    // 3. 登出功能
-    // ==========================================
-    onSignoutClicked () {
-        firebase.auth().signOut()
-            .then(() => {
-                console.log("登出成功！");
-
-                // 🌟 登出時，把 localStorage 裡的音量設定洗掉恢復預設 0.5
-                cc.sys.localStorage.setItem("bgmVolume", "0.5");
-                cc.sys.localStorage.setItem("sfxVolume", "0.5");
-
-                cc.director.loadScene("Start"); 
-            })
-            .catch((error: any) => {
-                console.log("登出失敗:", error.message);
-            });
-    }
-
-    // ==========================================
-    // 4. 個人檔案功能
-    // ==========================================
-    openAccountModal () {
-        this.accountModal.active = true;
-        this.showProfileView(); 
+    closeSettingsModal () {
+        this.closeAllModals();
     }
 
     closeAccountModal () {
-        this.accountModal.active = false;
+        this.closeAllModals();
+    }
+
+    // 隱藏主畫面，準備顯示彈窗
+    private hideMainUIForModal () {
+        if (this.titleNode) this.titleNode.active = false;
+        if (this.startBtnNode) this.startBtnNode.active = false;
+        if (this.leaderboardBtnNode) this.leaderboardBtnNode.active = false;
+        
+        // 顯示透明遮罩 (這樣點擊空白處才能觸發關閉)
+        if (this.closeBgBtn) this.closeBgBtn.active = true;
+    }
+
+    // ==========================================
+    // 排行榜功能
+    // ==========================================
+    openLeaderboardModal () {
+        this.closeAllModals();      // 先關掉其他可能開著的 Modal
+        this.hideMainUIForModal();  // 隱藏主畫面 UI
+        this.leaderboardModal.active = true;
+    }
+
+    // ==========================================
+    // 設定功能
+    // ==========================================
+    openSettingsModal () {
+        this.closeAllModals();      
+        this.hideMainUIForModal();  
+        this.settingsModal.active = true;
+    }
+
+    // ==========================================
+    // 個人檔案功能
+    // ==========================================
+    openAccountModal () {
+        this.closeAllModals();      
+        this.hideMainUIForModal();  
+        this.accountModal.active = true;
+        this.showProfileView(); // 每次打開保證切回預覽模式 (也就是放棄之前未儲存的編輯)
     }
 
     showProfileView () {
@@ -97,8 +134,6 @@ export default class MenuController extends cc.Component {
         if (user) {
             this.usernameLabel.string = user.displayName || "匿名玩家";
             this.scoreLabel.string = "0"; 
-        } else {
-            console.log("目前沒有使用者登入！");
         }
     }
 
@@ -120,113 +155,57 @@ export default class MenuController extends cc.Component {
 
     onSaveProfileClicked () {
         const user = firebase.auth().currentUser;
-        if (!user) {
-            console.log("找不到使用者，無法儲存");
-            return;
-        }
+        if (!user) return;
 
         const newName = this.usernameEditBox.string;
         const oldPassword = this.oldPasswordEditBox.string;
         const newPassword = this.newPasswordEditBox.string;
 
-        if (!newName) {
-            console.log("名字不能為空！");
-            return;
-        }
+        if (!newName) return;
 
-        console.log("正在儲存修改...");
-
-        user.updateProfile({
-            displayName: newName
-        }).then(() => {
-            console.log("名字修改成功！");
-
+        user.updateProfile({ displayName: newName }).then(() => {
             if (newPassword) {
-                if (!oldPassword) {
-                    console.log("修改密碼失敗：必須輸入舊密碼進行驗證！");
-                    return;
-                }
-
+                if (!oldPassword) return;
                 const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPassword);
-
                 return user.reauthenticateWithCredential(credential)
-                    .then(() => {
-                        return user.updatePassword(newPassword);
-                    })
-                    .then(() => {
-                        console.log("密碼修改成功！");
-                        this.showProfileView(); 
-                    })
-                    .catch((error: any) => {
-                        console.log("密碼修改失敗(可能是舊密碼錯誤):", error.message);
-                    });
+                    .then(() => user.updatePassword(newPassword))
+                    .then(() => this.showProfileView());
             } else {
                 this.showProfileView();
             }
-        }).catch((error: any) => {
-            console.log("暱稱修改失敗:", error.message);
         });
     }
 
     // ==========================================
-    // 5. 開始遊戲
+    // 其他主畫面按鈕
     // ==========================================
     onStartGameClicked () {
-        console.log("進入關卡選擇畫面！");
         cc.director.loadScene("LevelSelect");
     }
 
-    // ==========================================
-    // 6. 設定功能 (Settings Modal)
-    // ==========================================
-    @property(cc.Node) settingsModal: cc.Node = null;
-
-    @property(cc.Slider) bgmSlider: cc.Slider = null;
-    @property(cc.Slider) sfxSlider: cc.Slider = null;
-
-    @property(cc.Sprite) bgmIcon: cc.Sprite = null;
-    @property(cc.Sprite) sfxIcon: cc.Sprite = null;
-
-    @property([cc.SpriteFrame]) sfxFrames: cc.SpriteFrame[] = [];
-
-    @property(cc.SpriteFrame) bgmNormalFrame: cc.SpriteFrame = null;
-    @property(cc.SpriteFrame) bgmMutedFrame: cc.SpriteFrame = null;
-
-    openSettingsModal () {
-        this.settingsModal.active = true;
+    onSignoutClicked () {
+        firebase.auth().signOut().then(() => {
+            cc.sys.localStorage.setItem("bgmVolume", "0.5");
+            cc.sys.localStorage.setItem("sfxVolume", "0.5");
+            cc.director.loadScene("Start"); 
+        });
     }
 
-    closeSettingsModal () {
-        this.settingsModal.active = false;
-    }
-
-    // 當 BGM 滑桿被拉動時 (實時觸發)
+    // ==========================================
+    // 音量 Slider 邏輯
+    // ==========================================
     onBGMSliderMoved (slider: cc.Slider) {
         const volume = slider.progress; 
-        
-        // 🌟 把新數值永久存進瀏覽器緩存
         cc.sys.localStorage.setItem("bgmVolume", volume.toString());
-        
-        if (volume === 0) {
-            this.bgmIcon.spriteFrame = this.bgmMutedFrame;
-        } else {
-            this.bgmIcon.spriteFrame = this.bgmNormalFrame;
-        }
+        this.bgmIcon.spriteFrame = (volume === 0) ? this.bgmMutedFrame : this.bgmNormalFrame;
     }
 
-    // 當 SFX 滑桿被拉動時 (實時觸發)
     onSFXSliderMoved (slider: cc.Slider) {
         const volume = slider.progress;
-
-        // 🌟 把新數值永久存進瀏覽器緩存
         cc.sys.localStorage.setItem("sfxVolume", volume.toString());
 
-        if (volume === 0) {
-            this.sfxIcon.spriteFrame = this.sfxFrames[0]; 
-        } else if (volume <= 0.5) {
-            this.sfxIcon.spriteFrame = this.sfxFrames[1]; 
-        } else {
-            this.sfxIcon.spriteFrame = this.sfxFrames[2]; 
-        }
+        if (volume === 0) this.sfxIcon.spriteFrame = this.sfxFrames[0]; 
+        else if (volume <= 0.5) this.sfxIcon.spriteFrame = this.sfxFrames[1]; 
+        else this.sfxIcon.spriteFrame = this.sfxFrames[2]; 
     }
 }
