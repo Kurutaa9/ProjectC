@@ -3,7 +3,7 @@
   "_name": "water_idle",
   "_objFlags": 0,
   "_native": "",
-  "_duration": 3.1,
+  "_duration": 1.6,
   "sample": 10,
   "speed": 1,
   "wrapMode": 2,
@@ -18,19 +18,19 @@
             }
           },
           {
-            "frame": 1,
+            "frame": 0.5,
             "value": {
               "__uuid__": "b11f9216-21d7-4c57-b654-d189c878a182"
             }
           },
           {
-            "frame": 2,
+            "frame": 1,
             "value": {
               "__uuid__": "3b8ddcbe-f8df-432a-9fbf-008d6fdd5511"
             }
           },
           {
-            "frame": 3,
+            "frame": 1.5,
             "value": {
               "__uuid__": "b43dc79a-e156-4907-953a-1637050ae806"
             }
