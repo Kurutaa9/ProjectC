@@ -655,7 +655,7 @@
         "__id__": 15
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 18
@@ -717,7 +717,7 @@
       "__id__": 14
     },
     "_children": [],
-    "_active": true,
+    "_active": false,
     "_components": [
       {
         "__id__": 16
@@ -5663,8 +5663,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        188.999,
-        477.347,
+        311.591,
+        482.755,
         0,
         0,
         0,
@@ -5947,7 +5947,7 @@
     ],
     "isPulled": false,
     "appearing": {
-      "__id__": 15
+      "__id__": 14
     },
     "_id": "55xW8VGbdKD6A/ioUIMd8W"
   },
@@ -6008,7 +6008,7 @@
       "__id__": 148
     },
     "asset": {
-      "__uuid__": "410a3a5d-0f26-49bf-955a-a601ce1be49f"
+      "__uuid__": "c8e6db4c-74d5-4956-9ac7-aba74c6b029a"
     },
     "fileId": "",
     "sync": false
