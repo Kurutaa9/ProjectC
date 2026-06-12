@@ -6,70 +6,126 @@ declare const firebase: any;
 export default class MenuController extends cc.Component {
 
     // ==========================================
-    // 1. UI 節點綁定區 (照著你的層級微調)
+    // 1. UI 節點綁定區 
     // ==========================================
     @property(cc.Node) leaderboardModal: cc.Node = null;
-    @property(cc.Node) accountModal: cc.Node = null; // 你的母節點叫 AccountModal
+    @property(cc.Node) accountModal: cc.Node = null; 
+    @property(cc.Node) settingsModal: cc.Node = null;
 
-    // --- Profile 內部分頁 (對應你的 profile 和 Edit) ---
-    @property(cc.Node) profileView: cc.Node = null;   // 拉你的 profile 節點
-    @property(cc.Node) editView: cc.Node = null;      // 拉你的 Edit 節點
+    // --- 🌟 新增：主畫面要隱藏的 UI ---
+    @property(cc.Node) titleNode: cc.Node = null;
+    @property(cc.Node) startBtnNode: cc.Node = null;
+    @property(cc.Node) leaderboardBtnNode: cc.Node = null;
+    
+    // --- 🌟 新增：全螢幕透明關閉按鈕 ---
+    @property(cc.Node) closeBgBtn: cc.Node = null;
 
-    // --- Profile 顯示用元件 ---
-    @property(cc.Label) usernameLabel: cc.Label = null; // 拉 text 底下的 name
-    @property(cc.Label) scoreLabel: cc.Label = null;    // 拉 text 底下的 score
+    // --- Account 相關 ---
+    @property(cc.Node) profileView: cc.Node = null;   
+    @property(cc.Node) editView: cc.Node = null;      
+    @property(cc.Label) usernameLabel: cc.Label = null; 
+    @property(cc.Label) scoreLabel: cc.Label = null;    
+    @property(cc.EditBox) usernameEditBox: cc.EditBox = null;  
+    @property(cc.EditBox) oldPasswordEditBox: cc.EditBox = null; 
+    @property(cc.EditBox) newPasswordEditBox: cc.EditBox = null; 
 
-    // --- Profile 編輯用輸入框 (對應你的 Edit 底下) ---
-    @property(cc.EditBox) usernameEditBox: cc.EditBox = null;  // 拉 Username
-    @property(cc.EditBox) oldPasswordEditBox: cc.EditBox = null; // 拉 OldPassword
-    @property(cc.EditBox) newPasswordEditBox: cc.EditBox = null; // 拉 NewPassword
+    // --- Settings 相關 ---
+    @property(cc.Slider) bgmSlider: cc.Slider = null;
+    @property(cc.Slider) sfxSlider: cc.Slider = null;
+    @property(cc.Sprite) bgmIcon: cc.Sprite = null;
+    @property(cc.Sprite) sfxIcon: cc.Sprite = null;
+    @property([cc.SpriteFrame]) sfxFrames: cc.SpriteFrame[] = [];
+    @property(cc.SpriteFrame) bgmNormalFrame: cc.SpriteFrame = null;
+    @property(cc.SpriteFrame) bgmMutedFrame: cc.SpriteFrame = null;
 
     onLoad () {
-        this.closeLeaderboardModal();
-        this.closeAccountModal();
+        // 遊戲一開始，確保全部 Modal 都是關的，主畫面是正常顯示的
+        this.closeAllModals();
+
+        // 讀取音量設定
+        let savedBgm = cc.sys.localStorage.getItem("bgmVolume");
+        let savedSfx = cc.sys.localStorage.getItem("sfxVolume");
+        
+        let bgmVol = (savedBgm !== null && savedBgm !== "") ? parseFloat(savedBgm) : 0.5;
+        let sfxVol = (savedSfx !== null && savedSfx !== "") ? parseFloat(savedSfx) : 0.5;
+
+        if (this.bgmSlider && this.sfxSlider) {
+            this.bgmSlider.progress = bgmVol;
+            this.sfxSlider.progress = sfxVol;
+            this.onBGMSliderMoved(this.bgmSlider);
+            this.onSFXSliderMoved(this.sfxSlider);
+        }
     }
 
     // ==========================================
-    // 2. 排行榜功能 (Leaderboard)
+    // 🌟 核心控制邏輯：總開關
     // ==========================================
-    openLeaderboardModal () {
-        this.leaderboardModal.active = true;
+    
+    // 關閉所有彈窗，並恢復主畫面
+    public closeAllModals () {
+        if (this.leaderboardModal) this.leaderboardModal.active = false;
+        if (this.accountModal) this.accountModal.active = false;
+        if (this.settingsModal) this.settingsModal.active = false;
+
+        // 恢復主畫面按鈕
+        if (this.titleNode) this.titleNode.active = true;
+        if (this.startBtnNode) this.startBtnNode.active = true;
+        if (this.leaderboardBtnNode) this.leaderboardBtnNode.active = true;
+        
+        // 隱藏透明遮罩
+        if (this.closeBgBtn) this.closeBgBtn.active = false;
     }
 
     closeLeaderboardModal () {
-        this.leaderboardModal.active = false;
+        this.closeAllModals();
     }
 
-    // ==========================================
-    // 3. 登出功能 (Signout)
-    // ==========================================
-    onSignoutClicked () {
-        firebase.auth().signOut()
-            .then(() => {
-                console.log("登出成功！");
-                cc.director.loadScene("Start"); 
-            })
-            .catch((error: any) => {
-                console.log("登出失敗:", error.message);
-            });
+    closeSettingsModal () {
+        this.closeAllModals();
     }
 
-    // ==========================================
-    // 4. 個人檔案功能 (AccountModal)
-    // ==========================================
-    
-    // 點擊主畫面人頭打開
-    openAccountModal () {
-        this.accountModal.active = true;
-        this.showProfileView(); // 每次打開都先看顯示頁
-    }
-
-    // 點擊最外層大叉叉 (或者是 profile 底下的 closeBtn)
     closeAccountModal () {
-        this.accountModal.active = false;
+        this.closeAllModals();
     }
 
-    // 切換到：純顯示畫面 (profile)
+    // 隱藏主畫面，準備顯示彈窗
+    private hideMainUIForModal () {
+        if (this.titleNode) this.titleNode.active = false;
+        if (this.startBtnNode) this.startBtnNode.active = false;
+        if (this.leaderboardBtnNode) this.leaderboardBtnNode.active = false;
+        
+        // 顯示透明遮罩 (這樣點擊空白處才能觸發關閉)
+        if (this.closeBgBtn) this.closeBgBtn.active = true;
+    }
+
+    // ==========================================
+    // 排行榜功能
+    // ==========================================
+    openLeaderboardModal () {
+        this.closeAllModals();      // 先關掉其他可能開著的 Modal
+        this.hideMainUIForModal();  // 隱藏主畫面 UI
+        this.leaderboardModal.active = true;
+    }
+
+    // ==========================================
+    // 設定功能
+    // ==========================================
+    openSettingsModal () {
+        this.closeAllModals();      
+        this.hideMainUIForModal();  
+        this.settingsModal.active = true;
+    }
+
+    // ==========================================
+    // 個人檔案功能
+    // ==========================================
+    openAccountModal () {
+        this.closeAllModals();      
+        this.hideMainUIForModal();  
+        this.accountModal.active = true;
+        this.showProfileView(); // 每次打開保證切回預覽模式 (也就是放棄之前未儲存的編輯)
+    }
+
     showProfileView () {
         this.profileView.active = true;
         this.editView.active = false;
@@ -77,14 +133,10 @@ export default class MenuController extends cc.Component {
         const user = firebase.auth().currentUser;
         if (user) {
             this.usernameLabel.string = user.displayName || "匿名玩家";
-            // 這裡先寫死 0，等之後你們做分數資料庫時再從 Firestore 抓
             this.scoreLabel.string = "0"; 
-        } else {
-            console.log("目前沒有使用者登入！");
         }
     }
 
-    // 點擊小畫筆 editBtn：切換到編輯畫面 (Edit)
     onEditButtonClicked () {
         this.profileView.active = false;
         this.editView.active = true;
@@ -97,139 +149,63 @@ export default class MenuController extends cc.Component {
         this.newPasswordEditBox.string = "";
     }
 
-    // 在編輯狀態下按叉叉 (Edit 底下的 closeBtn)：不儲存退回
     onCancelEditClicked () {
         this.showProfileView();
     }
 
-    // 點擊 SaveBtn 按鈕：儲存變更
     onSaveProfileClicked () {
         const user = firebase.auth().currentUser;
-        if (!user) {
-            console.log("找不到使用者，無法儲存");
-            return;
-        }
+        if (!user) return;
 
         const newName = this.usernameEditBox.string;
         const oldPassword = this.oldPasswordEditBox.string;
         const newPassword = this.newPasswordEditBox.string;
 
-        if (!newName) {
-            console.log("名字不能為空！");
-            return;
-        }
+        if (!newName) return;
 
-        console.log("正在儲存修改...");
-
-        // 先改名字
-        user.updateProfile({
-            displayName: newName
-        }).then(() => {
-            console.log("名字修改成功！");
-
-            // 有填寫新密碼才觸發改密碼流程
+        user.updateProfile({ displayName: newName }).then(() => {
             if (newPassword) {
-                if (!oldPassword) {
-                    console.log("修改密碼失敗：必須輸入舊密碼進行驗證！");
-                    return;
-                }
-
-                // 用舊密碼重新驗證
+                if (!oldPassword) return;
                 const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPassword);
-
                 return user.reauthenticateWithCredential(credential)
-                    .then(() => {
-                        return user.updatePassword(newPassword);
-                    })
-                    .then(() => {
-                        console.log("密碼修改成功！");
-                        this.showProfileView(); // 成功後跳回顯示頁
-                    })
-                    .catch((error: any) => {
-                        console.log("密碼修改失敗(可能是舊密碼錯誤):", error.message);
-                    });
+                    .then(() => user.updatePassword(newPassword))
+                    .then(() => this.showProfileView());
             } else {
-                // 沒要改密碼，名字改完就直接跳回顯示頁面
                 this.showProfileView();
             }
-        }).catch((error: any) => {
-            console.log("暱稱修改失敗:", error.message);
         });
     }
 
     // ==========================================
-    // 5. 開始遊戲 (Start Game)
+    // 其他主畫面按鈕
     // ==========================================
     onStartGameClicked () {
-        console.log("進入關卡選擇畫面！");
-        // 跳轉到選關卡場景
         cc.director.loadScene("LevelSelect");
     }
 
-    // ==========================================
-    // 6. 設定功能 (Settings Modal)
-    // ==========================================
-    @property(cc.Node) settingsModal: cc.Node = null;
-
-    // --- Slider 元件 ---
-    @property(cc.Slider) bgmSlider: cc.Slider = null;
-    @property(cc.Slider) sfxSlider: cc.Slider = null;
-
-    // --- Icon 的 Sprite 元件 ---
-    @property(cc.Sprite) bgmIcon: cc.Sprite = null;
-    @property(cc.Sprite) sfxIcon: cc.Sprite = null;
-
-    // --- SFX 的四種音量圖案 (靜音, 小, 中, 大) ---
-    @property([cc.SpriteFrame]) sfxFrames: cc.SpriteFrame[] = [];
-
-    // --- BGM 的圖案 (正常, 靜音) ---
-    @property(cc.SpriteFrame) bgmNormalFrame: cc.SpriteFrame = null;
-    @property(cc.SpriteFrame) bgmMutedFrame: cc.SpriteFrame = null;
-
-    openSettingsModal () {
-        this.settingsModal.active = true;
+    onSignoutClicked () {
+        firebase.auth().signOut().then(() => {
+            cc.sys.localStorage.setItem("bgmVolume", "0.5");
+            cc.sys.localStorage.setItem("sfxVolume", "0.5");
+            cc.director.loadScene("Start"); 
+        });
     }
 
-    closeSettingsModal () {
-        this.settingsModal.active = false;
-    }
-
-    // 當 BGM 滑桿被拉動時 (實時觸發)
+    // ==========================================
+    // 音量 Slider 邏輯
+    // ==========================================
     onBGMSliderMoved (slider: cc.Slider) {
-        // slider.progress 的值會是 0.0 到 1.0 之間
         const volume = slider.progress; 
-        
-        // 1. 視覺回饋：切換 BGM Icon (最小聲時換成禁止圖案)
-        if (volume === 0) {
-            this.bgmIcon.spriteFrame = this.bgmMutedFrame;
-            // 如果你目前沒有畫禁止圖案，也可以先用顏色變暗來代替：
-            // this.bgmIcon.node.color = cc.Color.GRAY; 
-        } else {
-            this.bgmIcon.spriteFrame = this.bgmNormalFrame;
-            // this.bgmIcon.node.color = cc.Color.WHITE;
-        }
-
-        // 2. 預留給隊友的音效接口
-        //console.log(`[UI] BGM 音量實時改變為: ${Math.round(volume * 100)}%`);
-        // TODO: 等隊友寫好後，在這裡呼叫他的函數，例如：
-        // AudioManager.setBGMVolume(volume);
+        cc.sys.localStorage.setItem("bgmVolume", volume.toString());
+        this.bgmIcon.spriteFrame = (volume === 0) ? this.bgmMutedFrame : this.bgmNormalFrame;
     }
 
-    // 當 SFX 滑桿被拉動時 (實時觸發)
     onSFXSliderMoved (slider: cc.Slider) {
         const volume = slider.progress;
+        cc.sys.localStorage.setItem("sfxVolume", volume.toString());
 
-        // 1. 視覺回饋：根據音量區間切換對應的喇叭 Icon
-        if (volume === 0) {
-            this.sfxIcon.spriteFrame = this.sfxFrames[0]; // 靜音 (打叉或沒聲波)
-        } else if (volume <= 0.5) {
-            this.sfxIcon.spriteFrame = this.sfxFrames[1]; // 一條聲波
-        } else {
-            this.sfxIcon.spriteFrame = this.sfxFrames[2]; // 兩條聲波
-        }
-
-        // 2. 預留給隊友的音效接口
-        // console.log(`[UI] SFX 音量實時改變為: ${Math.round(volume * 100)}%`);
-        // TODO: AudioManager.setSFXVolume(volume);
+        if (volume === 0) this.sfxIcon.spriteFrame = this.sfxFrames[0]; 
+        else if (volume <= 0.5) this.sfxIcon.spriteFrame = this.sfxFrames[1]; 
+        else this.sfxIcon.spriteFrame = this.sfxFrames[2]; 
     }
 }
