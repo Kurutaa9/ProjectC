@@ -165,4 +165,71 @@ export default class MenuController extends cc.Component {
         // 跳轉到選關卡場景
         cc.director.loadScene("LevelSelect");
     }
+
+    // ==========================================
+    // 6. 設定功能 (Settings Modal)
+    // ==========================================
+    @property(cc.Node) settingsModal: cc.Node = null;
+
+    // --- Slider 元件 ---
+    @property(cc.Slider) bgmSlider: cc.Slider = null;
+    @property(cc.Slider) sfxSlider: cc.Slider = null;
+
+    // --- Icon 的 Sprite 元件 ---
+    @property(cc.Sprite) bgmIcon: cc.Sprite = null;
+    @property(cc.Sprite) sfxIcon: cc.Sprite = null;
+
+    // --- SFX 的四種音量圖案 (靜音, 小, 中, 大) ---
+    @property([cc.SpriteFrame]) sfxFrames: cc.SpriteFrame[] = [];
+
+    // --- BGM 的圖案 (正常, 靜音) ---
+    @property(cc.SpriteFrame) bgmNormalFrame: cc.SpriteFrame = null;
+    @property(cc.SpriteFrame) bgmMutedFrame: cc.SpriteFrame = null;
+
+    openSettingsModal () {
+        this.settingsModal.active = true;
+    }
+
+    closeSettingsModal () {
+        this.settingsModal.active = false;
+    }
+
+    // 當 BGM 滑桿被拉動時 (實時觸發)
+    onBGMSliderMoved (slider: cc.Slider) {
+        // slider.progress 的值會是 0.0 到 1.0 之間
+        const volume = slider.progress; 
+        
+        // 1. 視覺回饋：切換 BGM Icon (最小聲時換成禁止圖案)
+        if (volume === 0) {
+            this.bgmIcon.spriteFrame = this.bgmMutedFrame;
+            // 如果你目前沒有畫禁止圖案，也可以先用顏色變暗來代替：
+            // this.bgmIcon.node.color = cc.Color.GRAY; 
+        } else {
+            this.bgmIcon.spriteFrame = this.bgmNormalFrame;
+            // this.bgmIcon.node.color = cc.Color.WHITE;
+        }
+
+        // 2. 預留給隊友的音效接口
+        //console.log(`[UI] BGM 音量實時改變為: ${Math.round(volume * 100)}%`);
+        // TODO: 等隊友寫好後，在這裡呼叫他的函數，例如：
+        // AudioManager.setBGMVolume(volume);
+    }
+
+    // 當 SFX 滑桿被拉動時 (實時觸發)
+    onSFXSliderMoved (slider: cc.Slider) {
+        const volume = slider.progress;
+
+        // 1. 視覺回饋：根據音量區間切換對應的喇叭 Icon
+        if (volume === 0) {
+            this.sfxIcon.spriteFrame = this.sfxFrames[0]; // 靜音 (打叉或沒聲波)
+        } else if (volume <= 0.5) {
+            this.sfxIcon.spriteFrame = this.sfxFrames[1]; // 一條聲波
+        } else {
+            this.sfxIcon.spriteFrame = this.sfxFrames[2]; // 兩條聲波
+        }
+
+        // 2. 預留給隊友的音效接口
+        // console.log(`[UI] SFX 音量實時改變為: ${Math.round(volume * 100)}%`);
+        // TODO: AudioManager.setSFXVolume(volume);
+    }
 }
