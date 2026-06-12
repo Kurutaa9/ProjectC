@@ -12,23 +12,22 @@ enum OpeningState {
 @ccclass
 export default class OpeningScene extends cc.Component {
 
+    @property(cc.Node)
+    textRoot: cc.Node = null;
+
     @property(cc.Label)
-    narrationLabel: cc.Label = null;
+    lineTemplate: cc.Label = null;
 
     @property([cc.String])
     narrationTexts: string[] = [
-        "Long ago, the world was protected by a powerful treasure known as the Element Core.",
-        "But one day, the Element Core disappeared.",
-        "Without its power, the world began to fall into chaos.",
-        "To save the world, two young guardians were chosen.",
-        "Aqua, the Guardian of Water, and Ignis, the Guardian of Fire.",
-        "Their powers are completely different, but neither of them can complete the journey alone.",
-        "Only by working together can they pass through the five trials, and find the Element Core.",
-        "Their adventure begins now."
+        "Long ago, two spirits were chosen\\nto protect the balance of the elements.",
+        "One carried the warmth of fire.\\nThe other guarded the flow of water.",
+        "But deep inside the forgotten cave,\\nan ancient power began to awaken.",
+        "To restore peace,\\nthey must pass through five trials\\nand uncover the hidden treasure."
     ];
 
     @property
-    nextSceneName: string = "Menu";
+    nextSceneName: string = "LevelSelect";
 
     @property
     typeInterval: number = 0.045;
@@ -39,9 +38,20 @@ export default class OpeningScene extends cc.Component {
     @property
     fadeOutTime: number = 0.45;
 
+    @property
+    lineHeight: number = 40;
+
+    @property
+    estimatedCharWidth: number = 10;
+
     private currentIndex: number = 0;
+    private currentLines: string[] = [];
+
+    private currentLineIndex: number = 0;
     private currentCharIndex: number = 0;
-    private currentText: string = "";
+
+    private generatedLabels: cc.Label[] = [];
+    private generatedNodes: cc.Node[] = [];
 
     private state: OpeningState = OpeningState.Idle;
     private isChangingParagraph: boolean = false;
@@ -51,13 +61,18 @@ export default class OpeningScene extends cc.Component {
     }
 
     start(): void {
-        if (!this.narrationLabel) {
-            cc.error("OpeningScene: narrationLabel 尚未設定");
+        if (!this.textRoot) {
+            cc.error("OpeningScene: textRoot 尚未設定");
             return;
         }
 
-        this.narrationLabel.string = "";
-        this.narrationLabel.node.opacity = 0;
+        if (!this.lineTemplate) {
+            cc.error("OpeningScene: lineTemplate 尚未設定");
+            return;
+        }
+
+        this.lineTemplate.node.active = false;
+        this.textRoot.opacity = 0;
 
         this.currentIndex = 0;
         this.playCurrentParagraph();
@@ -66,6 +81,7 @@ export default class OpeningScene extends cc.Component {
     onDestroy(): void {
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
         this.unschedule(this.typeNextCharacter);
+        this.clearGeneratedLines();
     }
 
     private playCurrentParagraph(): void {
@@ -77,21 +93,76 @@ export default class OpeningScene extends cc.Component {
         this.isChangingParagraph = false;
         this.state = OpeningState.FadeIn;
 
-        this.currentText = this.narrationTexts[this.currentIndex];
+        this.clearGeneratedLines();
+
+        const rawText = this.narrationTexts[this.currentIndex].replace(/\\n/g, "\n");
+        this.currentLines = rawText.split("\n");
+
+        this.createLineLabels();
+
+        this.currentLineIndex = 0;
         this.currentCharIndex = 0;
 
-        this.narrationLabel.string = "";
-        this.narrationLabel.node.opacity = 0;
-        this.narrationLabel.node.active = true;
+        this.textRoot.opacity = 0;
 
-        cc.Tween.stopAllByTarget(this.narrationLabel.node);
+        cc.Tween.stopAllByTarget(this.textRoot);
 
-        cc.tween(this.narrationLabel.node)
+        cc.tween(this.textRoot)
             .to(this.fadeInTime, { opacity: 255 })
             .call(() => {
                 this.startTyping();
             })
             .start();
+    }
+
+    private createLineLabels(): void {
+        const totalHeight = (this.currentLines.length - 1) * this.lineHeight;
+
+        for (let i = 0; i < this.currentLines.length; i++) {
+            const fullLine = this.currentLines[i];
+
+            const lineNode = cc.instantiate(this.lineTemplate.node);
+            lineNode.parent = this.textRoot;
+            lineNode.active = true;
+
+            lineNode.anchorX = 0;
+            lineNode.anchorY = 0.5;
+
+            const lineWidth = this.measureLineWidth(fullLine);
+
+            lineNode.x = -lineWidth / 2;
+            lineNode.y = totalHeight / 2 - i * this.lineHeight;
+
+            lineNode.setContentSize(lineWidth + 10, this.lineHeight);
+
+            const label = lineNode.getComponent(cc.Label);
+
+            if (label) {
+                label.string = "";
+                label.horizontalAlign = cc.Label.HorizontalAlign.LEFT;
+                label.verticalAlign = cc.Label.VerticalAlign.CENTER;
+                label.overflow = cc.Label.Overflow.NONE;
+                label.enableWrapText = false;
+            }
+
+            this.generatedNodes.push(lineNode);
+            this.generatedLabels.push(label);
+        }
+    }
+
+    private measureLineWidth(line: string): number {
+        return Math.max(1, line.length * this.estimatedCharWidth);
+    }
+
+    private clearGeneratedLines(): void {
+        for (let i = 0; i < this.generatedNodes.length; i++) {
+            if (this.generatedNodes[i] && cc.isValid(this.generatedNodes[i])) {
+                this.generatedNodes[i].destroy();
+            }
+        }
+
+        this.generatedNodes = [];
+        this.generatedLabels = [];
     }
 
     private startTyping(): void {
@@ -100,8 +171,9 @@ export default class OpeningScene extends cc.Component {
         }
 
         this.state = OpeningState.Typing;
+
+        this.currentLineIndex = 0;
         this.currentCharIndex = 0;
-        this.narrationLabel.string = "";
 
         this.unschedule(this.typeNextCharacter);
         this.schedule(this.typeNextCharacter, this.typeInterval);
@@ -112,14 +184,37 @@ export default class OpeningScene extends cc.Component {
             return;
         }
 
-        if (this.currentCharIndex >= this.currentText.length) {
+        if (this.currentLineIndex >= this.currentLines.length) {
             this.unschedule(this.typeNextCharacter);
             this.state = OpeningState.Waiting;
             return;
         }
 
-        this.currentCharIndex++;
-        this.narrationLabel.string = this.currentText.substring(0, this.currentCharIndex);
+        const currentLine = this.currentLines[this.currentLineIndex];
+        const currentLabel = this.generatedLabels[this.currentLineIndex];
+
+        if (!currentLabel) {
+            this.moveToNextLine();
+            return;
+        }
+
+        if (this.currentCharIndex < currentLine.length) {
+            this.currentCharIndex++;
+            currentLabel.string = currentLine.substring(0, this.currentCharIndex);
+            return;
+        }
+
+        this.moveToNextLine();
+    }
+
+    private moveToNextLine(): void {
+        this.currentLineIndex++;
+        this.currentCharIndex = 0;
+
+        if (this.currentLineIndex >= this.currentLines.length) {
+            this.unschedule(this.typeNextCharacter);
+            this.state = OpeningState.Waiting;
+        }
     }
 
     private onKeyDown(event: cc.Event.EventKeyboard): void {
@@ -131,22 +226,19 @@ export default class OpeningScene extends cc.Component {
             return;
         }
 
-        // 狀況 1：正在逐字出現時，按空白鍵直接顯示完整文字
         if (this.state === OpeningState.Typing) {
             this.showFullCurrentText();
             return;
         }
 
-        // 狀況 2：文字已經完整顯示，按空白鍵才進入下一段
         if (this.state === OpeningState.Waiting) {
             this.goToNextParagraph();
             return;
         }
 
-        // 狀況 3：淡入期間按空白鍵，先讓文字直接完整出現
         if (this.state === OpeningState.FadeIn) {
-            cc.Tween.stopAllByTarget(this.narrationLabel.node);
-            this.narrationLabel.node.opacity = 255;
+            cc.Tween.stopAllByTarget(this.textRoot);
+            this.textRoot.opacity = 255;
             this.showFullCurrentText();
             return;
         }
@@ -155,9 +247,11 @@ export default class OpeningScene extends cc.Component {
     private showFullCurrentText(): void {
         this.unschedule(this.typeNextCharacter);
 
-        this.currentCharIndex = this.currentText.length;
-        this.narrationLabel.string = this.currentText;
-        this.narrationLabel.node.opacity = 255;
+        for (let i = 0; i < this.currentLines.length; i++) {
+            if (this.generatedLabels[i]) {
+                this.generatedLabels[i].string = this.currentLines[i];
+            }
+        }
 
         this.state = OpeningState.Waiting;
     }
@@ -170,11 +264,11 @@ export default class OpeningScene extends cc.Component {
         this.isChangingParagraph = true;
 
         this.unschedule(this.typeNextCharacter);
-        cc.Tween.stopAllByTarget(this.narrationLabel.node);
+        cc.Tween.stopAllByTarget(this.textRoot);
 
         this.state = OpeningState.FadeOut;
 
-        cc.tween(this.narrationLabel.node)
+        cc.tween(this.textRoot)
             .to(this.fadeOutTime, { opacity: 0 })
             .call(() => {
                 this.currentIndex++;
@@ -187,7 +281,9 @@ export default class OpeningScene extends cc.Component {
         this.state = OpeningState.Finished;
 
         this.unschedule(this.typeNextCharacter);
-        cc.Tween.stopAllByTarget(this.narrationLabel.node);
+        cc.Tween.stopAllByTarget(this.textRoot);
+
+        this.clearGeneratedLines();
 
         cc.director.loadScene(this.nextSceneName);
     }
