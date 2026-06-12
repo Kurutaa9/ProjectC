@@ -25,6 +25,61 @@ export default class MenuControl extends cc.Component {
     @property(cc.EditBox) loginEmailInput: cc.EditBox = null;
     @property(cc.EditBox) loginPasswordInput: cc.EditBox = null;
 
+    // --- 🌟 新增：Toast 提示節點 ---
+    @property(cc.Node) toastNode: cc.Node = null;
+
+    // ==========================================
+    // 🌟 Toast 提示功能
+    // ==========================================
+    showToast (message: string) {
+        if (!this.toastNode) {
+            console.error("❌ 尚未綁定 Toast Node！");
+            return;
+        }
+        
+        let label = this.toastNode.getComponent(cc.Label);
+        if (!label) label = this.toastNode.getComponentInChildren(cc.Label);
+        if (!label) return;
+
+        label.string = message;
+        this.toastNode.active = true;
+        this.toastNode.opacity = 255;
+
+        this.toastNode.stopAllActions();
+        this.unscheduleAllCallbacks();
+
+        this.scheduleOnce(() => {
+            this.toastNode.active = false;
+        }, 2.0);
+    }
+
+    // 專為登入/註冊設計的錯誤翻譯機
+    private getFriendlyErrorMessage (error: any): string {
+        if (!error) return "An unknown error occurred.";
+        const errorCode = error.code;
+        const errorMsg = typeof error.message === 'string' ? error.message : JSON.stringify(error.message);
+
+        // 攔截 Firebase 最新版的帳密錯誤
+        if (errorCode === 'auth/wrong-password' || 
+            errorCode === 'auth/user-not-found' || 
+            errorCode === 'auth/invalid-credential' || 
+            errorCode === 'auth/invalid-login-credentials' ||
+            errorMsg.includes("INVALID_LOGIN_CREDENTIALS")) {
+            return "Invalid email or password."; 
+        }
+
+        switch (errorCode) {
+            case 'auth/invalid-email':
+                return "Invalid email format.";
+            case 'auth/email-already-in-use':
+                return "Email is already registered.";
+            case 'auth/weak-password':
+                return "Password must be at least 6 chars.";
+            default:
+                return errorMsg;
+        }
+    }
+
     // ==========================================
     // 2. 遊戲啟動與 Firebase 載入
     // ==========================================
@@ -108,15 +163,31 @@ export default class MenuControl extends cc.Component {
     }
 
     onSignupEnterClicked () {
-        const email = this.emailInput.string;
-        const username = this.usernameInput.string;
+        const email = this.emailInput.string.trim();
+        const username = this.usernameInput.string.trim();
         const password = this.passwordInput.string;
 
-        if (!email || !username || !password) {
-            console.warn("請填寫所有欄位！");
+        // --- 防呆驗證區 ---
+        
+        // 1. 使用者名稱空白
+        if (username === "") {
+            this.showToast("Username cannot be empty.");
+            return;
+        }
+        
+        // 2. 電子郵件基本格式檢查
+        if (!email.includes("@") || !email.includes(".")) {
+            this.showToast("Invalid email format.");
+            return;
+        }
+        
+        // 3. 密碼長度檢查
+        if (password.length < 6) {
+            this.showToast("Password must be at least 6 chars.");
             return;
         }
 
+        // --- 呼叫 Firebase API ---
         firebase.auth().createUserWithEmailAndPassword(email, password)
             .then((userCredential) => {
                 return userCredential.user.updateProfile({
@@ -124,16 +195,16 @@ export default class MenuControl extends cc.Component {
                 });
             })
             .then(() => {
-                console.log("註冊成功！玩家名稱：", username);
+                this.showToast("Sign up successful!");
                 this.closeSignupModal();
             })
             .catch((error) => {
-                console.error("註冊失敗:", error.message);
+                this.showToast(this.getFriendlyErrorMessage(error));
             });
     }
 
     // ==========================================
-    // 4. 🌟 新增：登入功能 (Login)
+    // 4. 🌟 登入功能 (Login)
     // ==========================================
 
     openLoginModal () {
@@ -161,29 +232,33 @@ export default class MenuControl extends cc.Component {
     }
 
     onLoginEnterClicked () {
-        const email = this.loginEmailInput.string;
+        const email = this.loginEmailInput.string.trim();
         const password = this.loginPasswordInput.string;
 
-        // 防呆檢查
-        if (!email || !password) {
-            console.warn("請填寫信箱與密碼！");
+        // --- 防呆驗證區 ---
+        
+        // 防呆檢查是否有漏填
+        if (email === "" || password === "") {
+            this.showToast("Please fill in all fields.");
             return;
         }
 
-        console.log("登入中...");
+        // 1. 不合的電子郵件形式
+        if (!email.includes("@") || !email.includes(".")) {
+            this.showToast("Invalid email format.");
+            return;
+        }
 
-        // 呼叫 Firebase 登入 API
+        // --- 呼叫 Firebase API ---
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                console.log("登入成功！歡迎：", userCredential.user.email);
-                
+                this.showToast("Login successful!");
                 // 🌟 登入成功，跳轉到 opening 場景
                 cc.director.loadScene("Opening");
             })
             .catch((error) => {
-                // 登入失敗 (密碼錯誤或無此帳號)
-                console.error("登入失敗:", error.message);
-                // 這裡可以考慮加上一段顯示錯誤訊息給玩家看的 UI (例如 Toast)
+                // 2. 密碼錯誤或無此帳號 (透過翻譯機轉為 Invalid email or password)
+                this.showToast(this.getFriendlyErrorMessage(error));
             });
     }
 }
