@@ -10,6 +10,10 @@ export default class Portal extends cc.Component {
     private fireboyNode: cc.Node | null = null;
     private watergirlNode: cc.Node | null = null;
 
+    // Tracks which players have already committed to the portal.
+    private fireboyEntered: boolean = false;
+    private watergirlEntered: boolean = false;
+
     onLoad() {
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
     }
@@ -63,7 +67,25 @@ export default class Portal extends cc.Component {
         const sceneName = cc.director.getScene().name;
 
         if (sceneName === "Level1" || sceneName === "testing scene 1") {
-            if ((this.fireboyInside && this.hasKeyAttached(this.fireboyNode)) || (this.watergirlInside && this.hasKeyAttached(this.watergirlNode))) {
+            let anyEntered = false;
+
+            if (!this.fireboyEntered && this.fireboyInside && this.hasKeyAttached(this.fireboyNode)) {
+                this.fireboyEntered = true;
+                if (this.fireboyNode) {
+                    this.fireboyNode.active = false;
+                }
+                anyEntered = true;
+            }
+
+            if (!this.watergirlEntered && this.watergirlInside && this.hasKeyAttached(this.watergirlNode)) {
+                this.watergirlEntered = true;
+                if (this.watergirlNode) {
+                    this.watergirlNode.active = false;
+                }
+                anyEntered = true;
+            }
+
+            if (this.fireboyEntered && this.watergirlEntered) {
                 this.loadLevelSelect();
             }
             return;
