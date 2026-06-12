@@ -6,10 +6,12 @@ export default class BGMManager extends cc.Component {
     private static instance: BGMManager = null;
 
     private static readonly STORAGE_KEY_BGM_VOLUME: string = "bgm_volume";
+    private static readonly STORAGE_KEY_SFX_VOLUME: string = "sfx_volume";
 
     private currentBGMName: string = "";
 
     private bgmVolume: number = 1;
+    private sfxVolume: number = 1;
 
     public static getInstance(): BGMManager {
         if (BGMManager.instance && cc.isValid(BGMManager.instance.node)) {
@@ -35,13 +37,15 @@ export default class BGMManager extends cc.Component {
         BGMManager.instance = this;
         cc.game.addPersistRootNode(this.node);
 
-        this.loadVolume();
+        this.loadVolumes();
+
         cc.audioEngine.setMusicVolume(this.bgmVolume);
+        cc.audioEngine.setEffectsVolume(this.sfxVolume);
     }
 
     public playBGM(clip: cc.AudioClip, loop: boolean = true, forceRestart: boolean = false): void {
         if (!clip) {
-            cc.warn("BGMManager: 沒有指定 AudioClip");
+            cc.warn("BGMManager: 沒有指定 BGM AudioClip");
             return;
         }
 
@@ -78,21 +82,47 @@ export default class BGMManager extends cc.Component {
         return this.bgmVolume;
     }
 
-    private loadVolume(): void {
-        const savedValue = cc.sys.localStorage.getItem(BGMManager.STORAGE_KEY_BGM_VOLUME);
+    public playSFX(clip: cc.AudioClip): void {
+        if (!clip) {
+            cc.warn("BGMManager: 沒有指定 SFX AudioClip");
+            return;
+        }
+
+        cc.audioEngine.setEffectsVolume(this.sfxVolume);
+        cc.audioEngine.playEffect(clip, false);
+    }
+
+    public setSFXVolume(volume: number): void {
+        volume = Math.max(0, Math.min(1, volume));
+
+        this.sfxVolume = volume;
+
+        cc.audioEngine.setEffectsVolume(this.sfxVolume);
+        cc.sys.localStorage.setItem(BGMManager.STORAGE_KEY_SFX_VOLUME, this.sfxVolume.toString());
+    }
+
+    public getSFXVolume(): number {
+        return this.sfxVolume;
+    }
+
+    private loadVolumes(): void {
+        this.bgmVolume = this.loadVolumeValue(BGMManager.STORAGE_KEY_BGM_VOLUME, 1);
+        this.sfxVolume = this.loadVolumeValue(BGMManager.STORAGE_KEY_SFX_VOLUME, 1);
+    }
+
+    private loadVolumeValue(key: string, defaultValue: number): number {
+        const savedValue = cc.sys.localStorage.getItem(key);
 
         if (savedValue === null || savedValue === undefined || savedValue === "") {
-            this.bgmVolume = 1;
-            return;
+            return defaultValue;
         }
 
         const parsedValue = parseFloat(savedValue);
 
         if (isNaN(parsedValue)) {
-            this.bgmVolume = 1;
-            return;
+            return defaultValue;
         }
 
-        this.bgmVolume = Math.max(0, Math.min(1, parsedValue));
+        return Math.max(0, Math.min(1, parsedValue));
     }
 }
