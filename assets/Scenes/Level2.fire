@@ -6005,7 +6005,9 @@
     "root": {
       "__id__": 148
     },
-    "asset": null,
+    "asset": {
+      "__uuid__": "c164628c-0849-4443-9ece-eff619d2f22b"
+    },
     "fileId": "8acWyTWmFIV62/a9WAK8LS",
     "sync": false
   },
@@ -6108,7 +6110,9 @@
     "root": {
       "__id__": 148
     },
-    "asset": null,
+    "asset": {
+      "__uuid__": "c164628c-0849-4443-9ece-eff619d2f22b"
+    },
     "fileId": "6cdesBSsdEhamCy0mYW4ng",
     "sync": false
   },
@@ -6196,7 +6200,9 @@
     "root": {
       "__id__": 148
     },
-    "asset": null,
+    "asset": {
+      "__uuid__": "c164628c-0849-4443-9ece-eff619d2f22b"
+    },
     "fileId": "58+e0nIpRGXpf3thqyboel",
     "sync": false
   },
@@ -6399,7 +6405,9 @@
     "root": {
       "__id__": 148
     },
-    "asset": null,
+    "asset": {
+      "__uuid__": "c164628c-0849-4443-9ece-eff619d2f22b"
+    },
     "fileId": "",
     "sync": false
   },
@@ -6610,9 +6618,7 @@
     "root": {
       "__id__": 163
     },
-    "asset": {
-      "__uuid__": "662babff-229e-40f1-ae38-6ef07f0699c2"
-    },
+    "asset": null,
     "fileId": "",
     "sync": false
   }
