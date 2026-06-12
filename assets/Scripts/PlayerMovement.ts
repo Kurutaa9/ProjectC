@@ -19,6 +19,7 @@ export default class PlayerMovement extends cc.Component {
     private rb: cc.RigidBody = null;
 
     onLoad() {
+
         this.anim = this.getComponent(cc.Animation);
         this.rb = this.getComponent(cc.RigidBody);
 
