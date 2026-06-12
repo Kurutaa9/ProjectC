@@ -11,6 +11,7 @@ export default class MenuController extends cc.Component {
     @property(cc.Node) leaderboardModal: cc.Node = null;
     @property(cc.Node) accountModal: cc.Node = null; 
     @property(cc.Node) settingsModal: cc.Node = null;
+    @property(cc.Node) toastNode: cc.Node = null;
 
     // --- 🌟 新增：主畫面要隱藏的 UI ---
     @property(cc.Node) titleNode: cc.Node = null;
@@ -55,6 +56,41 @@ export default class MenuController extends cc.Component {
             this.onBGMSliderMoved(this.bgmSlider);
             this.onSFXSliderMoved(this.sfxSlider);
         }
+    }
+
+    // ==========================================
+    // 🌟 Toast 提示功能
+    // ==========================================
+    showToast (message: string) {
+        if (!this.toastNode) {
+            console.error("❌ 嚴重錯誤：MenuController 上的 [Toast Node] 欄位沒有綁定任何節點！");
+            return;
+        }
+        
+        // 嘗試從自己或子節點撈取 cc.Label
+        let label = this.toastNode.getComponent(cc.Label);
+        if (!label) {
+            label = this.toastNode.getComponentInChildren(cc.Label);
+        }
+
+        if (!label) {
+            console.error("❌ 嚴重錯誤：Toast 節點身上或子節點找不到 cc.Label 元件！");
+            return;
+        }
+
+        // 設定文字並強制顯示
+        label.string = message;
+        this.toastNode.active = true;
+        this.toastNode.opacity = 255; // 確保看得見
+
+        // 清除之前的計時器與動作，防止連續點擊時錯亂
+        this.toastNode.stopAllActions();
+        this.unscheduleAllCallbacks();
+
+        // 2.0 秒後自動隱藏
+        this.scheduleOnce(() => {
+            this.toastNode.active = false;
+        }, 2.0);
     }
 
     // ==========================================
@@ -153,27 +189,112 @@ export default class MenuController extends cc.Component {
         this.showProfileView();
     }
 
+    private getFriendlyErrorMessage (error: any): string {
+        if (!error) return "An unknown error occurred.";
+        
+        const errorCode = error.code;
+        const errorMsg = typeof error.message === 'string' ? error.message : JSON.stringify(error.message);
+
+        // 1. 攔截 Firebase 最新的錯誤碼 (或者是整坨 JSON 裡面的關鍵字)
+        if (errorCode === 'auth/wrong-password' || 
+            errorCode === 'auth/invalid-credential' || 
+            errorCode === 'auth/invalid-login-credentials' ||
+            errorMsg.includes("INVALID_LOGIN_CREDENTIALS")) {
+            return "Incorrect old password.";
+        }
+
+        // 2. 處理其他的常規錯誤
+        switch (errorCode) {
+            case 'auth/weak-password':
+                return "Password is too weak. (Min. 6 chars)";
+            case 'auth/requires-recent-login':
+                return "Session expired. Please re-login.";
+            case 'auth/network-request-failed':
+                return "Network error. Please try again.";
+            case 'auth/too-many-requests':
+                return "Too many attempts. Try again later.";
+            default:
+                // 如果是沒預期到的錯誤，就顯示原本的訊息
+                return errorMsg;
+        }
+    }
+
     onSaveProfileClicked () {
         const user = firebase.auth().currentUser;
-        if (!user) return;
+        if (!user) {
+            this.showToast("User not logged in!");
+            return;
+        }
 
-        const newName = this.usernameEditBox.string;
+        const newName = this.usernameEditBox.string.trim();
         const oldPassword = this.oldPasswordEditBox.string;
         const newPassword = this.newPasswordEditBox.string;
 
-        if (!newName) return;
+        const isNameChanged = (newName !== "" && newName !== user.displayName);
+        const isPasswordChanged = (newPassword !== "");
 
-        user.updateProfile({ displayName: newName }).then(() => {
-            if (newPassword) {
-                if (!oldPassword) return;
-                const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPassword);
-                return user.reauthenticateWithCredential(credential)
-                    .then(() => user.updatePassword(newPassword))
-                    .then(() => this.showProfileView());
-            } else {
-                this.showProfileView();
+        // --- 防呆驗證 (失敗時只跳 Toast，停留在 Edit 畫面) ---
+
+        if (this.usernameEditBox.string.trim() === "") {
+            this.showToast("Username cannot be empty.");
+            return;
+        }
+
+        if (!isNameChanged && !isPasswordChanged) {
+            this.showToast("No changes made.");
+            this.showProfileView();
+            return;
+        }
+
+        if (isPasswordChanged) {
+            if (!oldPassword) {
+                this.showToast("Please enter your old password.");
+                return;
             }
-        });
+            if (newPassword.length < 6) {
+                this.showToast("New password must be at least 6 chars.");
+                return;
+            }
+        }
+
+        if (!isPasswordChanged && oldPassword) {
+            this.showToast("Please enter a new password.");
+            return;
+        }
+
+        // --- 發送 Firebase 請求 ---
+        
+        if (isPasswordChanged) {
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPassword);
+            
+            user.reauthenticateWithCredential(credential).then(() => {
+                return user.updatePassword(newPassword);
+            }).then(() => {
+                if (isNameChanged) {
+                    return user.updateProfile({ displayName: newName });
+                }
+            }).then(() => {
+                // 🌟 成功：跳 Toast，並關閉 Edit 畫面退回 Profile 畫面
+                this.showToast(isNameChanged ? "Profile updated successfully!" : "Password updated successfully!");
+                this.showProfileView(); 
+            }).catch((error) => {
+                // 失敗：跳 Toast，畫面不動
+                this.showToast(this.getFriendlyErrorMessage(error));
+            });
+            
+            return; 
+        }
+
+        if (isNameChanged) {
+            user.updateProfile({ displayName: newName }).then(() => {
+                // 🌟 成功：跳 Toast，並關閉 Edit 畫面退回 Profile 畫面
+                this.showToast("Username updated successfully!");
+                this.showProfileView();
+            }).catch((error) => {
+                // 失敗：跳 Toast，畫面不動
+                this.showToast(this.getFriendlyErrorMessage(error));
+            });
+        }
     }
 
     // ==========================================
