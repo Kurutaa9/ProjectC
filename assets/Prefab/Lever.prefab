@@ -57,8 +57,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        377.025,
-        484.255,
+        409,
+        484.282,
         0,
         0,
         0,
@@ -137,6 +137,7 @@
       }
     ],
     "isPulled": false,
+    "appearing": null,
     "_id": ""
   },
   {
