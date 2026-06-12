@@ -193,7 +193,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        0,
+        -206.13,
         0,
         0,
         0,
@@ -236,7 +236,7 @@
       "a": 255
     },
     "_depth": -1,
-    "_zoomRatio": 0.8,
+    "_zoomRatio": 0.5,
     "_targetTexture": null,
     "_fov": 60,
     "_orthoSize": 10,
@@ -5326,7 +5326,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        408.284,
+        202.154,
         64.352,
         0,
         0,
@@ -5684,7 +5684,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        409,
+        202.87,
         484.282,
         0,
         0,
@@ -6201,7 +6201,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        409,
+        202.87,
         484.282,
         0,
         0,
@@ -6780,7 +6780,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        295.081,
+        88.951,
         469.945,
         0,
         0,
@@ -7036,7 +7036,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        334.865,
+        128.735,
         471.297,
         0,
         0,
@@ -7292,7 +7292,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        1480.433,
+        1274.303,
         507.465,
         0,
         0,
@@ -7617,7 +7617,7 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        342.276,
+        136.146,
         68.735,
         0,
         0,
