@@ -20,6 +20,10 @@ export default class TargetKey extends cc.Component {
             return;
         }
 
+        if (this.playerAlreadyHasKey(playerNode)) {
+            return;
+        }
+
         const playerKeyNode = this.resolvePlayerKeyNode(playerNode);
         if (!playerKeyNode) {
             cc.warn("TargetKey: 找不到 Player_key prefab/node");
@@ -70,6 +74,16 @@ export default class TargetKey extends cc.Component {
         playerKeyNode.setPosition(0, playerNode.height * 0.75);
         playerKeyNode.zIndex = 999;
         playerKeyNode.active = true;
+    }
+
+    private playerAlreadyHasKey(playerNode: cc.Node): boolean {
+        for (let i = 0; i < playerNode.childrenCount; i++) {
+            const child = playerNode.children[i];
+            if (child.active && child.name.toLowerCase().indexOf("key") !== -1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private findNodeByName(root: cc.Node, targetName: string): cc.Node | null {

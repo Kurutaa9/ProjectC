@@ -60,7 +60,12 @@ export default class Portal extends cc.Component {
     }
 
     private onKeyDown(event: cc.Event.EventKeyboard): void {
-        if (event.keyCode !== cc.macro.KEY.e) {
+        const isInteractKey =
+            event.keyCode === cc.macro.KEY.e ||
+            event.keyCode === cc.macro.KEY.enter ||
+            event.keyCode === 13;
+
+        if (!isInteractKey) {
             return;
         }
 
