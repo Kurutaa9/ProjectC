@@ -1,17 +1,11 @@
 {
-  "start-scene": "d62f57c0-db10-4e4c-9c24-f3ed25e68d79",
   "group-list": [
     "default",
-    "ground",
-    "Platform",
-    "Spike",
-    "quicksand"
+    "player",
+    "New Group 4"
   ],
   "collision-matrix": [
     [
-      true,
-      true,
-      true,
       true,
       true
     ],
@@ -21,22 +15,9 @@
       false
     ],
     [
-      true,
-      false,
-      true
-    ],
-    [
-      true,
       false,
       false,
-      true
-    ],
-    [
-      true,
-      false,
-      false,
-      false,
-      true
+      false
     ]
   ],
   "excluded-modules": [
@@ -64,5 +45,6 @@
     "audience": {
       "enable": false
     }
-  }
+  },
+  "start-scene": "d3940889-0283-4607-ac9d-c8f9f8c21831"
 }

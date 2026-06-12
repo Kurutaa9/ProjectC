@@ -3,57 +3,47 @@ const { ccclass } = cc._decorator;
 @ccclass
 export default class InteractableGem extends cc.Component {
 
-    private fireboyInside = false;
-    private watergirlInside = false;
+    private pickedUp: boolean = false;
 
-    onLoad() {
-        cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
+    onBeginContact(contact: cc.PhysicsContact, selfCollider: cc.PhysicsCollider, otherCollider: cc.PhysicsCollider) {
+        if (this.pickedUp) {
+            return;
+        }
+
+        const playerNode = otherCollider.node;
+
+        if (!playerNode || (playerNode.name !== "Fireboy" && playerNode.name !== "Watergirl")) {
+            return;
+        }
+
+        const playerKeyNode = this.findPlayerKeyNode(playerNode);
+
+        if (!playerKeyNode) {
+            return;
+        }
+
+        this.pickedUp = true;
+        playerKeyNode.active = true;
+        this.node.destroy();
     }
 
-    onDestroy() {
-        cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
-    }
-
-    onBeginContact(contact, selfCollider, otherCollider) {
-
-        if (otherCollider.node.name === "Fireboy") {
-            this.fireboyInside = true;
+    private findPlayerKeyNode(playerNode: cc.Node): cc.Node | null {
+        if (!playerNode) {
+            return null;
         }
 
-        if (otherCollider.node.name === "Watergirl") {
-            this.watergirlInside = true;
-        }
-    }
-
-    onEndContact(contact, selfCollider, otherCollider) {
-
-        if (otherCollider.node.name === "Fireboy") {
-            this.fireboyInside = false;
+        const directChild = playerNode.getChildByName("Player_key");
+        if (directChild) {
+            return directChild;
         }
 
-        if (otherCollider.node.name === "Watergirl") {
-            this.watergirlInside = false;
-        }
-    }
-
-    onKeyDown(event: cc.Event.EventKeyboard) {
-
-        // Fireboy uses E
-
-        if (
-            event.keyCode === cc.macro.KEY.e &&
-            this.fireboyInside
-        ) {
-            this.node.destroy();
+        for (let i = 0; i < playerNode.childrenCount; i++) {
+            const child = playerNode.children[i];
+            if (child.name.toLowerCase().indexOf("key") !== -1) {
+                return child;
+            }
         }
 
-        // Watergirl uses ENTER
-
-        if (
-            event.keyCode === cc.macro.KEY.enter &&
-            this.watergirlInside
-        ) {
-            this.node.destroy();
-        }
+        return null;
     }
 }
