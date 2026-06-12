@@ -41,11 +41,8 @@ export default class PlayerMovement extends cc.Component {
 
         if (this.inQuicksand) {
             xSpeed = this.moveX * (this.speed * 0.45);
-
-            // do not allow fast falling inside quicksand
             ySpeed = Math.max(v.y, -15);
-        } 
-        else if (!this.isGrounded() && this.isTouchingWall() && ySpeed < -120) {
+        } else if (!this.isGrounded() && this.isTouchingWall() && ySpeed < -120) {
             ySpeed = -120;
         }
 
@@ -114,6 +111,18 @@ export default class PlayerMovement extends cc.Component {
         }
     }
 
+    onPreSolve(contact: cc.PhysicsContact, self: cc.PhysicsCollider, other: cc.PhysicsCollider) {
+        if (other.node.group !== "Platform") return;
+
+        const playerBottom = this.node.y - this.node.height / 2;
+        const platformTop = other.node.y + other.node.height / 2;
+        const v = this.rb.linearVelocity;
+
+        if (playerBottom < platformTop || v.y > 0) {
+            contact.disabled = true;
+        }
+    }
+
     private isGrounded(): boolean {
         const start = this.node.convertToWorldSpaceAR(cc.v2(0, -8));
         const end = cc.v2(start.x, start.y - 18);
@@ -124,7 +133,8 @@ export default class PlayerMovement extends cc.Component {
 
         if (results.length <= 0) return false;
 
-        return results[0].collider.node.group === "ground";
+        const group = results[0].collider.node.group;
+        return group === "ground" || group === "Platform";
     }
 
     private isTouchingWall(): boolean {
@@ -138,13 +148,8 @@ export default class PlayerMovement extends cc.Component {
         const rightHits = physics.rayCast(center, rightEnd, cc.RayCastType.Closest);
         const leftHits = physics.rayCast(center, leftEnd, cc.RayCastType.Closest);
 
-        if (rightHits.length > 0 && rightHits[0].collider.node.group === "wall") {
-            return true;
-        }
-
-        if (leftHits.length > 0 && leftHits[0].collider.node.group === "wall") {
-            return true;
-        }
+        if (rightHits.length > 0 && rightHits[0].collider.node.group === "wall") return true;
+        if (leftHits.length > 0 && leftHits[0].collider.node.group === "wall") return true;
 
         return false;
     }

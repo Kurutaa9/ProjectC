@@ -11,6 +11,9 @@ export default class Lever extends cc.Component {
     @property
     isPulled: boolean = false;
 
+    @property(cc.Node)
+    appearing: cc.Node = null;
+
     private sprite: cc.Sprite = null;
     private isAnimating: boolean = false;
     private playersInZone: number = 0;
@@ -20,12 +23,12 @@ export default class Lever extends cc.Component {
 
         this.sprite = this.getComponent(cc.Sprite);
 
-        if (!this.sprite) {
-            cc.error("Lever script requires a Sprite component on the node!");
-            return;
+        cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
+
+        if (this.appearing) {
+            this.appearing.active = this.isPulled;
         }
 
-        cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
         this.updateVisual();
     }
 
@@ -34,11 +37,12 @@ export default class Lever extends cc.Component {
     }
 
     private onKeyDown(event: cc.Event.EventKeyboard) {
-        if (
-            (event.keyCode === cc.macro.KEY.e || event.keyCode === cc.macro.KEY.slash) &&
-            this.playersInZone > 0 &&
-            !this.isAnimating
-        ) {
+        const isInteractKey =
+            event.keyCode === cc.macro.KEY.e ||
+            event.keyCode === cc.macro.KEY.enter ||
+            event.keyCode === 13;
+
+        if (isInteractKey && this.playersInZone > 0 && !this.isAnimating) {
             this.onInteract();
         }
     }
@@ -57,6 +61,11 @@ export default class Lever extends cc.Component {
 
     private onInteract() {
         this.isPulled = !this.isPulled;
+
+        if (this.appearing) {
+            this.appearing.active = this.isPulled;
+        }
+
         this.playAnimation();
     }
 
