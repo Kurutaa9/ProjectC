@@ -13,9 +13,6 @@ export default class LevelSelect extends cc.Component {
     levelSceneNames: string[] = [
         "Level1",
         "Level2",
-        "Level3",
-        "Level4",
-        "Level5"
     ];
 
     start(): void {
@@ -36,9 +33,9 @@ export default class LevelSelect extends cc.Component {
                 continue;
             }
 
-            const isUnlocked = levelNumber <= unlockedLevel;
+            const isUnlocked = true;
             const stars = GameProgress.getStars(levelNumber);
-            const shouldPlayUnlockAnimation = levelNumber === justUnlockedLevel;
+            const shouldPlayUnlockAnimation = false;
 
             item.setup(
                 levelNumber,
