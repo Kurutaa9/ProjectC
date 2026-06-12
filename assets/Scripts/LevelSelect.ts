@@ -69,4 +69,11 @@ export default class LevelSelect extends cc.Component {
         GameProgress.resetProgress();
         this.refreshLevelItems();
     }
+
+    // ==========================================
+    // 新增：返回主選單的按鈕功能
+    // ==========================================
+    public onBackButtonClicked(): void {
+        cc.director.loadScene("Menu");
+    }
 }

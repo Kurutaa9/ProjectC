@@ -513,7 +513,7 @@
       "Only by working together can they pass through the five trials, and find the Element Core.",
       "Their adventure begins now."
     ],
-    "nextSceneName": "LevelSelect",
+    "nextSceneName": "Menu",
     "typeInterval": 0.045,
     "fadeInTime": 0.6,
     "fadeOutTime": 0.45,

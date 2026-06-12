@@ -28,7 +28,7 @@ export default class OpeningScene extends cc.Component {
     ];
 
     @property
-    nextSceneName: string = "LevelSelect";
+    nextSceneName: string = "Menu";
 
     @property
     typeInterval: number = 0.045;
