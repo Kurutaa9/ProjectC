@@ -57,13 +57,7 @@ export default class GameProgress {
 
     public static getBestTime(level: number): number {
         const value = cc.sys.localStorage.getItem(this.getBestTimeKey(level));
-        let bestTime = parseFloat(value);
-
-        if (isNaN(bestTime) || bestTime <= 0) {
-            return 0;
-        }
-
-        return bestTime;
+        return this.toPositiveNumber(value);
     }
 
     public static completeLevel(level: number, earnedStars: number, elapsedTimeSeconds?: number): void {
@@ -130,13 +124,18 @@ export default class GameProgress {
     }
 
     private static setBestTime(level: number, elapsedTimeSeconds: number): void {
-        const currentBestTime = this.getBestTime(level);
-
-        if (currentBestTime > 0 && elapsedTimeSeconds >= currentBestTime) {
+        const normalizedElapsed = this.toPositiveNumber(elapsedTimeSeconds);
+        if (normalizedElapsed <= 0) {
             return;
         }
 
-        cc.sys.localStorage.setItem(this.getBestTimeKey(level), elapsedTimeSeconds.toString());
+        const currentBestTime = this.getBestTime(level);
+
+        if (currentBestTime > 0 && normalizedElapsed >= currentBestTime) {
+            return;
+        }
+
+        cc.sys.localStorage.setItem(this.getBestTimeKey(level), String(normalizedElapsed));
     }
 
     private static syncBestTimeToFirestore(level: number, elapsedTimeSeconds: number): void {
@@ -151,8 +150,8 @@ export default class GameProgress {
             return;
         }
 
-        const bestTime = this.getBestTime(level);
-        if (bestTime <= 0 || elapsedTimeSeconds > bestTime) {
+        const bestTime = this.toPositiveNumber(this.getBestTime(level));
+        if (bestTime <= 0) {
             cc.log("GameProgress: skip Firestore sync (not a best run).", {
                 level,
                 elapsedTimeSeconds,
@@ -168,7 +167,8 @@ export default class GameProgress {
             bestTimes: {}
         };
 
-        data.bestTimes[this.getLevelFieldName(level)] = bestTime;
+        // Force Firestore field type to Number for leaderboard sorting.
+        data.bestTimes[this.getLevelFieldName(level)] = Number(bestTime);
 
         firebase.firestore()
             .collection("players")
@@ -185,6 +185,19 @@ export default class GameProgress {
 
     private static getBestTimeKey(level: number): string {
         return "level_" + level + "_best_time";
+    }
+
+    private static toPositiveNumber(value: any): number {
+        if (typeof value === "number") {
+            return isFinite(value) && value > 0 ? value : 0;
+        }
+
+        if (typeof value === "string") {
+            const parsed = Number(value);
+            return isFinite(parsed) && parsed > 0 ? parsed : 0;
+        }
+
+        return 0;
     }
 
     private static findCurrentLevelTimer(): LevelTimer | null {
