@@ -13,13 +13,18 @@ export default class MenuController extends cc.Component {
     @property(cc.Node) settingsModal: cc.Node = null;
     @property(cc.Node) toastNode: cc.Node = null;
 
-    // --- 🌟 新增：主畫面要隱藏的 UI ---
+    // --- 主畫面要隱藏的 UI ---
     @property(cc.Node) titleNode: cc.Node = null;
     @property(cc.Node) startBtnNode: cc.Node = null;
     @property(cc.Node) leaderboardBtnNode: cc.Node = null;
     
-    // --- 🌟 新增：全螢幕透明關閉按鈕 ---
+    // --- 全螢幕透明關閉按鈕 ---
     @property(cc.Node) closeBgBtn: cc.Node = null;
+
+    // --- 🌟 排行榜 (Leaderboard) 純文字分頁版 ---
+    @property(cc.Label) leaderboardText: cc.Label = null; // 綁定中間那個純文字節點
+    @property(cc.Node) prevPageBtn: cc.Node = null;       // 綁定左邊的箭頭按鈕
+    @property(cc.Node) nextPageBtn: cc.Node = null;       // 綁定右邊的箭頭按鈕
 
     // --- Account 相關 ---
     @property(cc.Node) profileView: cc.Node = null;   
@@ -39,11 +44,14 @@ export default class MenuController extends cc.Component {
     @property(cc.SpriteFrame) bgmNormalFrame: cc.SpriteFrame = null;
     @property(cc.SpriteFrame) bgmMutedFrame: cc.SpriteFrame = null;
 
+    // --- 分頁狀態變數 ---
+    private leaderboardData: any[] = [];
+    private currentPage: number = 0;
+    private readonly ITEMS_PER_PAGE: number = 5;
+
     onLoad () {
-        // 遊戲一開始，確保全部 Modal 都是關的，主畫面是正常顯示的
         this.closeAllModals();
 
-        // 讀取音量設定
         let savedBgm = cc.sys.localStorage.getItem("bgmVolume");
         let savedSfx = cc.sys.localStorage.getItem("sfxVolume");
         
@@ -59,7 +67,7 @@ export default class MenuController extends cc.Component {
     }
 
     // ==========================================
-    // 🌟 Toast 提示功能
+    // Toast 提示功能
     // ==========================================
     showToast (message: string) {
         if (!this.toastNode) {
@@ -67,84 +75,138 @@ export default class MenuController extends cc.Component {
             return;
         }
         
-        // 嘗試從自己或子節點撈取 cc.Label
         let label = this.toastNode.getComponent(cc.Label);
-        if (!label) {
-            label = this.toastNode.getComponentInChildren(cc.Label);
-        }
+        if (!label) label = this.toastNode.getComponentInChildren(cc.Label);
+        if (!label) return;
 
-        if (!label) {
-            console.error("❌ 嚴重錯誤：Toast 節點身上或子節點找不到 cc.Label 元件！");
-            return;
-        }
-
-        // 設定文字並強制顯示
         label.string = message;
         this.toastNode.active = true;
-        this.toastNode.opacity = 255; // 確保看得見
+        this.toastNode.opacity = 255; 
 
-        // 清除之前的計時器與動作，防止連續點擊時錯亂
         this.toastNode.stopAllActions();
         this.unscheduleAllCallbacks();
 
-        // 2.0 秒後自動隱藏
         this.scheduleOnce(() => {
             this.toastNode.active = false;
         }, 2.0);
     }
 
     // ==========================================
-    // 🌟 核心控制邏輯：總開關
+    // 核心控制邏輯：總開關
     // ==========================================
-    
-    // 關閉所有彈窗，並恢復主畫面
     public closeAllModals () {
         if (this.leaderboardModal) this.leaderboardModal.active = false;
         if (this.accountModal) this.accountModal.active = false;
         if (this.settingsModal) this.settingsModal.active = false;
 
-        // 恢復主畫面按鈕
         if (this.titleNode) this.titleNode.active = true;
         if (this.startBtnNode) this.startBtnNode.active = true;
         if (this.leaderboardBtnNode) this.leaderboardBtnNode.active = true;
-        
-        // 隱藏透明遮罩
         if (this.closeBgBtn) this.closeBgBtn.active = false;
     }
 
-    closeLeaderboardModal () {
-        this.closeAllModals();
-    }
+    closeLeaderboardModal () { this.closeAllModals(); }
+    closeSettingsModal () { this.closeAllModals(); }
+    closeAccountModal () { this.closeAllModals(); }
 
-    closeSettingsModal () {
-        this.closeAllModals();
-    }
-
-    closeAccountModal () {
-        this.closeAllModals();
-    }
-
-    // 隱藏主畫面，準備顯示彈窗
     private hideMainUIForModal () {
         if (this.titleNode) this.titleNode.active = false;
         if (this.startBtnNode) this.startBtnNode.active = false;
         if (this.leaderboardBtnNode) this.leaderboardBtnNode.active = false;
-        
-        // 顯示透明遮罩 (這樣點擊空白處才能觸發關閉)
         if (this.closeBgBtn) this.closeBgBtn.active = true;
     }
 
     // ==========================================
-    // 排行榜功能
+    // 🌟 排行榜功能 (純文字分頁版)
     // ==========================================
     openLeaderboardModal () {
-        this.closeAllModals();      // 先關掉其他可能開著的 Modal
-        this.hideMainUIForModal();  // 隱藏主畫面 UI
+        this.closeAllModals();      
+        this.hideMainUIForModal();  
         this.leaderboardModal.active = true;
+
+        this.leaderboardText.string = "Loading...";
+        this.prevPageBtn.active = false;
+        this.nextPageBtn.active = false;
+
+        this.fetchLeaderboardData();
+    }
+
+    fetchLeaderboardData () {
+        // 一次抓 50 筆資料下來做分頁
+        firebase.firestore().collection("players")
+            .orderBy("bestTimes.level1BestTime", "asc") 
+            .limit(50) 
+            .get()
+            .then((querySnapshot) => {
+                this.leaderboardData = []; // 清空舊資料
+
+                querySnapshot.forEach((doc) => {
+                    let data = doc.data();
+                    if (data.username && data.bestTimes && data.bestTimes.level1BestTime) {
+                        this.leaderboardData.push({
+                            name: data.username,
+                            time: data.bestTimes.level1BestTime.toFixed(2)
+                        });
+                    }
+                });
+
+                this.currentPage = 0; // 回到第一頁
+                this.renderLeaderboardPage(); // 渲染文字
+            })
+            .catch((error) => {
+                console.error("❌ 抓取排行榜失敗：", error);
+                this.leaderboardText.string = "Failed to load data.";
+            });
+    }
+
+    // 將陣列轉換成純文字顯示
+    renderLeaderboardPage () {
+        if (this.leaderboardData.length === 0) {
+            this.leaderboardText.string = "No data yet.";
+            this.prevPageBtn.active = false;
+            this.nextPageBtn.active = false;
+            return;
+        }
+
+        // 計算這頁要顯示哪幾筆
+        let startIdx = this.currentPage * this.ITEMS_PER_PAGE;
+        let endIdx = startIdx + this.ITEMS_PER_PAGE;
+        let pageData = this.leaderboardData.slice(startIdx, endIdx);
+
+        // 組合純文字 (使用 \n 換行)
+        let displayText = "";
+        pageData.forEach((data, index) => {
+            let rank = startIdx + index + 1;
+            // 格式：No.1  Bella  -  20.81s (後面加兩個 \n 來拉開行距)
+            displayText += `No.${rank}    ${data.name}    -    ${data.time}s\n\n`;
+        });
+
+        this.leaderboardText.string = displayText;
+
+        // 控制左右箭頭要不要顯示
+        this.prevPageBtn.active = (this.currentPage > 0);
+        this.nextPageBtn.active = (endIdx < this.leaderboardData.length);
+    }
+
+    // 給左邊箭頭按鈕綁定的事件
+    onPrevPageClicked () {
+        if (this.currentPage > 0) {
+            this.currentPage--;
+            this.renderLeaderboardPage();
+        }
+    }
+
+    // 給右邊箭頭按鈕綁定的事件
+    onNextPageClicked () {
+        let maxPage = Math.ceil(this.leaderboardData.length / this.ITEMS_PER_PAGE) - 1;
+        if (this.currentPage < maxPage) {
+            this.currentPage++;
+            this.renderLeaderboardPage();
+        }
     }
 
     // ==========================================
-    // 設定功能
+    // 設定與個人檔案功能 (維持不變)
     // ==========================================
     openSettingsModal () {
         this.closeAllModals();      
@@ -152,14 +214,11 @@ export default class MenuController extends cc.Component {
         this.settingsModal.active = true;
     }
 
-    // ==========================================
-    // 個人檔案功能
-    // ==========================================
     openAccountModal () {
         this.closeAllModals();      
         this.hideMainUIForModal();  
         this.accountModal.active = true;
-        this.showProfileView(); // 每次打開保證切回預覽模式 (也就是放棄之前未儲存的編輯)
+        this.showProfileView(); 
     }
 
     showProfileView () {
@@ -195,7 +254,6 @@ export default class MenuController extends cc.Component {
         const errorCode = error.code;
         const errorMsg = typeof error.message === 'string' ? error.message : JSON.stringify(error.message);
 
-        // 1. 攔截 Firebase 最新的錯誤碼 (或者是整坨 JSON 裡面的關鍵字)
         if (errorCode === 'auth/wrong-password' || 
             errorCode === 'auth/invalid-credential' || 
             errorCode === 'auth/invalid-login-credentials' ||
@@ -203,19 +261,12 @@ export default class MenuController extends cc.Component {
             return "Incorrect old password.";
         }
 
-        // 2. 處理其他的常規錯誤
         switch (errorCode) {
-            case 'auth/weak-password':
-                return "Password is too weak. (Min. 6 chars)";
-            case 'auth/requires-recent-login':
-                return "Session expired. Please re-login.";
-            case 'auth/network-request-failed':
-                return "Network error. Please try again.";
-            case 'auth/too-many-requests':
-                return "Too many attempts. Try again later.";
-            default:
-                // 如果是沒預期到的錯誤，就顯示原本的訊息
-                return errorMsg;
+            case 'auth/weak-password': return "Password is too weak. (Min. 6 chars)";
+            case 'auth/requires-recent-login': return "Session expired. Please re-login.";
+            case 'auth/network-request-failed': return "Network error. Please try again.";
+            case 'auth/too-many-requests': return "Too many attempts. Try again later.";
+            default: return errorMsg;
         }
     }
 
@@ -253,8 +304,6 @@ export default class MenuController extends cc.Component {
         const isNameChanged = (newName !== "" && newName !== user.displayName);
         const isPasswordChanged = (newPassword !== "");
 
-        // --- 防呆驗證 (失敗時只跳 Toast，停留在 Edit 畫面) ---
-
         if (this.usernameEditBox.string.trim() === "") {
             this.showToast("Username cannot be empty.");
             return;
@@ -281,8 +330,6 @@ export default class MenuController extends cc.Component {
             this.showToast("Please enter a new password.");
             return;
         }
-
-        // --- 發送 Firebase 請求 ---
         
         if (isPasswordChanged) {
             const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPassword);
@@ -296,14 +343,11 @@ export default class MenuController extends cc.Component {
             }).then(() => {
                 return this.syncPlayerProfileDoc(user);
             }).then(() => {
-                // 🌟 成功：跳 Toast，並關閉 Edit 畫面退回 Profile 畫面
                 this.showToast(isNameChanged ? "Profile updated successfully!" : "Password updated successfully!");
                 this.showProfileView(); 
             }).catch((error) => {
-                // 失敗：跳 Toast，畫面不動
                 this.showToast(this.getFriendlyErrorMessage(error));
             });
-            
             return; 
         }
 
@@ -311,22 +355,15 @@ export default class MenuController extends cc.Component {
             user.updateProfile({ displayName: newName }).then(() => {
                 return this.syncPlayerProfileDoc(user);
             }).then(() => {
-                // 🌟 成功：跳 Toast，並關閉 Edit 畫面退回 Profile 畫面
                 this.showToast("Username updated successfully!");
                 this.showProfileView();
             }).catch((error) => {
-                // 失敗：跳 Toast，畫面不動
                 this.showToast(this.getFriendlyErrorMessage(error));
             });
         }
     }
 
-    // ==========================================
-    // 其他主畫面按鈕
-    // ==========================================
-    onStartGameClicked () {
-        cc.director.loadScene("LevelSelect");
-    }
+    onStartGameClicked () { cc.director.loadScene("LevelSelect"); }
 
     onSignoutClicked () {
         firebase.auth().signOut().then(() => {
@@ -336,9 +373,6 @@ export default class MenuController extends cc.Component {
         });
     }
 
-    // ==========================================
-    // 音量 Slider 邏輯
-    // ==========================================
     onBGMSliderMoved (slider: cc.Slider) {
         const volume = slider.progress; 
         cc.sys.localStorage.setItem("bgmVolume", volume.toString());
