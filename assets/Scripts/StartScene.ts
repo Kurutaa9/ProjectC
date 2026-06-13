@@ -140,6 +140,32 @@ export default class MenuControl extends cc.Component {
         }
     }
 
+    private upsertPlayerProfileDoc(user: any, preferredUsername?: string): Promise<void> {
+        if (typeof firebase === "undefined" || !user) {
+            return Promise.resolve();
+        }
+
+        const username = (preferredUsername && preferredUsername.trim().length > 0)
+            ? preferredUsername.trim()
+            : (user.displayName || "Player");
+
+        const payload: any = {
+            username,
+            email: user.email || "",
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
+            bestTimes: {}
+        };
+
+        return firebase.firestore()
+            .collection("players")
+            .doc(user.uid)
+            .set(payload, { merge: true })
+            .catch((error: any) => {
+                cc.warn("StartScene: failed to upsert player profile", error);
+            });
+    }
+
     // ==========================================
     // 3. 註冊功能 (Signup)
     // ==========================================
@@ -189,16 +215,20 @@ export default class MenuControl extends cc.Component {
 
         // --- 呼叫 Firebase API ---
         firebase.auth().createUserWithEmailAndPassword(email, password)
-            .then((userCredential) => {
+            .then((userCredential: any) => {
                 return userCredential.user.updateProfile({
                     displayName: username
                 });
             })
             .then(() => {
+                const user = firebase.auth().currentUser;
+                return this.upsertPlayerProfileDoc(user, username);
+            })
+            .then(() => {
                 this.showToast("Sign up successful!");
                 this.closeSignupModal();
             })
-            .catch((error) => {
+            .catch((error: any) => {
                 this.showToast(this.getFriendlyErrorMessage(error));
             });
     }
@@ -251,12 +281,15 @@ export default class MenuControl extends cc.Component {
 
         // --- 呼叫 Firebase API ---
         firebase.auth().signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                this.showToast("Login successful!");
-                // 🌟 登入成功，跳轉到 opening 場景
-                cc.director.loadScene("Opening");
+            .then((userCredential: any) => {
+                return this.upsertPlayerProfileDoc(userCredential.user)
+                    .then(() => {
+                        this.showToast("Login successful!");
+                        // 🌟 登入成功，跳轉到 opening 場景
+                        cc.director.loadScene("Opening");
+                    });
             })
-            .catch((error) => {
+            .catch((error: any) => {
                 // 2. 密碼錯誤或無此帳號 (透過翻譯機轉為 Invalid email or password)
                 this.showToast(this.getFriendlyErrorMessage(error));
             });

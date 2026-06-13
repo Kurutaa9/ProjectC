@@ -1,3 +1,7 @@
+declare const firebase: any;
+
+import LevelTimer from "./LevelTimer";
+
 export default class GameProgress {
     private static readonly MAX_LEVEL: number = 5;
 
@@ -51,10 +55,25 @@ export default class GameProgress {
         }
     }
 
-    public static completeLevel(level: number, earnedStars: number): void {
+    public static getBestTime(level: number): number {
+        const value = cc.sys.localStorage.getItem(this.getBestTimeKey(level));
+        let bestTime = parseFloat(value);
+
+        if (isNaN(bestTime) || bestTime <= 0) {
+            return 0;
+        }
+
+        return bestTime;
+    }
+
+    public static completeLevel(level: number, earnedStars: number, elapsedTimeSeconds?: number): void {
         this.init();
 
         this.setStars(level, earnedStars);
+
+        if (typeof elapsedTimeSeconds === "number" && elapsedTimeSeconds > 0) {
+            this.setBestTime(level, elapsedTimeSeconds);
+        }
 
         const currentUnlockedLevel = this.getUnlockedLevel();
         const nextLevel = level + 1;
@@ -63,6 +82,21 @@ export default class GameProgress {
             this.setUnlockedLevel(nextLevel);
             cc.sys.localStorage.setItem(this.KEY_JUST_UNLOCKED_LEVEL, nextLevel.toString());
         }
+    }
+
+    public static recordCurrentLevelResult(level: number): void {
+        const timer = this.findCurrentLevelTimer();
+
+        if (!timer) {
+            cc.warn("GameProgress: 找不到 LevelTimer，無法儲存最佳時間。");
+            return;
+        }
+
+        const elapsedTimeSeconds = timer.stopTimer();
+        const earnedStars = timer.getStarCount();
+
+        this.completeLevel(level, earnedStars, elapsedTimeSeconds);
+        this.syncBestTimeToFirestore(level, elapsedTimeSeconds);
     }
 
     public static getJustUnlockedLevel(): number {
@@ -93,5 +127,93 @@ export default class GameProgress {
 
     private static getStarKey(level: number): string {
         return "level_" + level + "_stars";
+    }
+
+    private static setBestTime(level: number, elapsedTimeSeconds: number): void {
+        const currentBestTime = this.getBestTime(level);
+
+        if (currentBestTime > 0 && elapsedTimeSeconds >= currentBestTime) {
+            return;
+        }
+
+        cc.sys.localStorage.setItem(this.getBestTimeKey(level), elapsedTimeSeconds.toString());
+    }
+
+    private static syncBestTimeToFirestore(level: number, elapsedTimeSeconds: number): void {
+        if (typeof firebase === "undefined") {
+            cc.warn("GameProgress: firebase is undefined, skip Firestore sync.");
+            return;
+        }
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            cc.warn("GameProgress: currentUser is null, skip Firestore sync.");
+            return;
+        }
+
+        const bestTime = this.getBestTime(level);
+        if (bestTime <= 0 || elapsedTimeSeconds > bestTime) {
+            cc.log("GameProgress: skip Firestore sync (not a best run).", {
+                level,
+                elapsedTimeSeconds,
+                bestTime
+            });
+            return;
+        }
+
+        const data: any = {
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            username: user.displayName || "Player",
+            email: user.email || "",
+            bestTimes: {}
+        };
+
+        data.bestTimes[this.getLevelFieldName(level)] = bestTime;
+
+        firebase.firestore()
+            .collection("players")
+            .doc(user.uid)
+            .set(data, { merge: true })
+            .catch((error: any) => {
+                cc.warn("GameProgress: Firestore best time save failed", error);
+            });
+    }
+
+    private static getLevelFieldName(level: number): string {
+        return "level" + level + "BestTime";
+    }
+
+    private static getBestTimeKey(level: number): string {
+        return "level_" + level + "_best_time";
+    }
+
+    private static findCurrentLevelTimer(): LevelTimer | null {
+        const scene = cc.director.getScene();
+
+        if (!scene) {
+            return null;
+        }
+
+        return this.findLevelTimerRecursive(scene);
+    }
+
+    private static findLevelTimerRecursive(root: cc.Node): LevelTimer | null {
+        if (!root) {
+            return null;
+        }
+
+        const timer = root.getComponent(LevelTimer);
+        if (timer) {
+            return timer;
+        }
+
+        for (let i = 0; i < root.childrenCount; i++) {
+            const match = this.findLevelTimerRecursive(root.children[i]);
+            if (match) {
+                return match;
+            }
+        }
+
+        return null;
     }
 }

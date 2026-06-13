@@ -219,6 +219,26 @@ export default class MenuController extends cc.Component {
         }
     }
 
+    private syncPlayerProfileDoc(user: any): Promise<void> {
+        if (typeof firebase === "undefined" || !user) {
+            return Promise.resolve();
+        }
+
+        const payload: any = {
+            username: user.displayName || "Player",
+            email: user.email || "",
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        return firebase.firestore()
+            .collection("players")
+            .doc(user.uid)
+            .set(payload, { merge: true })
+            .catch((error: any) => {
+                cc.warn("MenuController: failed to sync profile to Firestore", error);
+            });
+    }
+
     onSaveProfileClicked () {
         const user = firebase.auth().currentUser;
         if (!user) {
@@ -274,6 +294,8 @@ export default class MenuController extends cc.Component {
                     return user.updateProfile({ displayName: newName });
                 }
             }).then(() => {
+                return this.syncPlayerProfileDoc(user);
+            }).then(() => {
                 // 🌟 成功：跳 Toast，並關閉 Edit 畫面退回 Profile 畫面
                 this.showToast(isNameChanged ? "Profile updated successfully!" : "Password updated successfully!");
                 this.showProfileView(); 
@@ -287,6 +309,8 @@ export default class MenuController extends cc.Component {
 
         if (isNameChanged) {
             user.updateProfile({ displayName: newName }).then(() => {
+                return this.syncPlayerProfileDoc(user);
+            }).then(() => {
                 // 🌟 成功：跳 Toast，並關閉 Edit 畫面退回 Profile 畫面
                 this.showToast("Username updated successfully!");
                 this.showProfileView();

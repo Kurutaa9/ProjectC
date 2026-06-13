@@ -1,5 +1,7 @@
 const { ccclass, property } = cc._decorator;
 
+import GameProgress from "./GameProgress";
+
 @ccclass
 export default class Portal extends cc.Component {
 
@@ -105,7 +107,7 @@ export default class Portal extends cc.Component {
             }
 
             if (this.fireboyEntered && this.watergirlEntered) {
-                this.loadLevelSelect();
+                this.recordAndLoadNextScene(sceneName);
             }
             return;
         }
@@ -211,15 +213,30 @@ export default class Portal extends cc.Component {
         return false;
     }
 
-    private loadLevelSelect(): void {
-        const currentScene = cc.director.getScene();
-        const currentSceneName = currentScene ? currentScene.name : "";
+    private recordAndLoadNextScene(sceneName: string): void {
+        const levelNumber = this.getLevelNumber(sceneName);
 
-        if (currentSceneName === "Level2") {
+        if (levelNumber > 0) {
+            GameProgress.recordCurrentLevelResult(levelNumber);
+        }
+
+        if (sceneName === "Level2") {
             cc.director.loadScene("Ending");
             return;
         }
 
         cc.director.loadScene("LevelSelect");
+    }
+
+    private getLevelNumber(sceneName: string): number {
+        if (sceneName === "Level1" || sceneName === "testing scene 1") {
+            return 1;
+        }
+
+        if (sceneName === "Level2") {
+            return 2;
+        }
+
+        return 0;
     }
 }
