@@ -144,9 +144,8 @@ export default class GameProgress {
             return;
         }
 
-        const user = firebase.auth().currentUser;
-        if (!user) {
-            cc.warn("GameProgress: currentUser is null, skip Firestore sync.");
+        if (!firebase.auth || !firebase.firestore) {
+            cc.warn("GameProgress: firebase auth/firestore not ready, skip Firestore sync.");
             return;
         }
 
@@ -157,6 +156,34 @@ export default class GameProgress {
                 elapsedTimeSeconds,
                 bestTime
             });
+            return;
+        }
+
+        const user = firebase.auth().currentUser;
+        if (user) {
+            this.writeBestTimeToFirestore(level, bestTime, user);
+            return;
+        }
+
+        cc.warn("GameProgress: currentUser is null, waiting for auth state to sync.");
+
+        const unsubscribe = firebase.auth().onAuthStateChanged((authUser: any) => {
+            unsubscribe();
+
+            if (!authUser) {
+                cc.warn("GameProgress: auth state still null, skip Firestore sync.");
+                return;
+            }
+
+            this.writeBestTimeToFirestore(level, bestTime, authUser);
+        }, (error: any) => {
+            cc.warn("GameProgress: auth state listener failed", error);
+        });
+    }
+
+    private static writeBestTimeToFirestore(level: number, bestTime: number, user: any): void {
+        if (!user || !user.uid) {
+            cc.warn("GameProgress: invalid user when writing Firestore best time.");
             return;
         }
 
@@ -174,6 +201,13 @@ export default class GameProgress {
             .collection("players")
             .doc(user.uid)
             .set(data, { merge: true })
+            .then(() => {
+                cc.log("GameProgress: Firestore best time synced", {
+                    uid: user.uid,
+                    level,
+                    bestTime
+                });
+            })
             .catch((error: any) => {
                 cc.warn("GameProgress: Firestore best time save failed", error);
             });
